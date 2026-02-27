@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.team2.meetspace.ui.theme.CallBackground
+import com.team2.meetspace.ui.theme.CallBackgroundColor
 import androidx.compose.ui.platform.LocalContext
 
 import com.team2.meetspace.R;
@@ -35,7 +35,7 @@ fun CallScreen(
     val callTestAudioPlayer = CallTestAudioPlayer(context);
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize().background(CallBackground)
+        modifier = Modifier.fillMaxSize().background(CallBackgroundColor)
     ) {
         Text(
             text = "Экран видео-встречи\nс основными кнопками",
