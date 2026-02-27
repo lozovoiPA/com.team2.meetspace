@@ -12,3 +12,4 @@ val Pink40 = Color(0xFF7D5260)
 
 val CallBackgroundColor = Color(0xFF0C090E)
 val ButtonColor = Color(0xFF884498)
+val HangupCallButtonColor = Color(0xFFDA2B2B)
