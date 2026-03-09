@@ -1,8 +1,6 @@
-package com.team2.meetspace.ui.compose
+package com.team2.meetspace.ui.compose.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,8 +17,7 @@ import androidx.compose.ui.unit.sp
 
 @Preview
 @Composable
-fun JoinMeetingScreen(
-    onCancelButtonClicked: () -> Unit = {},
+fun LandingScreen(
     onNextButtonClicked: () -> Unit = {}
 ){
     Box(
@@ -28,28 +25,19 @@ fun JoinMeetingScreen(
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            text = "Экран присоединения к встрече\nВвод идентификатора, имени пользователя",
+            text = "Экран лендинга\nЗапрос уведомления, шаги",
             color = Color.Gray,
             fontSize = 20.sp,
             textAlign = TextAlign.Center
         )
-        Row(
+        Button(
+            onClick = { onNextButtonClicked(); },
             modifier = Modifier
+                .align(Alignment.BottomCenter) // Aligns the button to the bottom center
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(16.dp)
         ) {
-            Button(
-                onClick = { onCancelButtonClicked(); }
-            ) {
-                Text(text = "На главную")
-            }
-            Button(
-                onClick = { onNextButtonClicked(); }
-            ) {
-                Text(text = "На экран звонка")
-            }
+            Text(text = "На главную")
         }
     }
 }

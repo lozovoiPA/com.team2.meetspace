@@ -16,10 +16,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.team2.meetspace.ui.screens.CallScreen
-import com.team2.meetspace.ui.screens.JoinMeetingScreen
-import com.team2.meetspace.ui.screens.LandingScreen
-import com.team2.meetspace.ui.screens.MainScreen
+import com.team2.meetspace.ui.compose.screens.CallScreen
+import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
+import com.team2.meetspace.ui.compose.screens.LandingScreen
+import com.team2.meetspace.ui.compose.screens.MainScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 
 enum class MeetspaceScreen {

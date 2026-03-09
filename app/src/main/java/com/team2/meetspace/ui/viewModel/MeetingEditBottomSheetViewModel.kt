@@ -1,4 +1,4 @@
-package com.team2.meetspace
+package com.team2.meetspace.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MeetingEditBottomSheetState(
-    val meeting: Meeting = Meeting(),
+    val meeting: Meeting = Meeting.emptyMeeting,
     val meetingCreated: Boolean = false,
     val error: String? = null
 )
@@ -26,7 +26,7 @@ class MeetingEditBottomSheetViewModel(
 
     fun createMeeting(meeting: Meeting) {
         viewModelScope.launch {
-            val result = meetingRepository.createMeeting(meeting)
+            val result = meetingRepository.create(meeting.timestamp, meeting.description)
             when (result) {
                 is MeetingCreated -> {
                     _uiState.update {

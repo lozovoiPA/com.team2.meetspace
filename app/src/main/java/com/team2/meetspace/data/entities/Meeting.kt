@@ -16,25 +16,26 @@ data class MeetingDbEntity(
     val description: String
 ) { }
 
-
 data class Meeting(
     val timestamp: Int,
     val roomIdentifier: String,
     val description: String,
-    val date: LocalDate = LocalDate.now(),
-    val time: LocalTime = LocalTime.now(),
-    val users: List<UserContact> = emptyList(),
-    val isImmediate: Boolean = true
+    val users: List<UserContact> = emptyList()
 ) {
+    companion object {
+        public val emptyMeeting: Meeting = Meeting(0, "", "");
+    }
+
     public fun toDbEntity(): MeetingDbEntity = MeetingDbEntity(
         id = 0,
         timestamp = timestamp,
         roomIdentifier = roomIdentifier,
         description = description
     )
-    val formattedDateTime: String
+    val formattedDateTime: String = "12.25"
+        /*
         get() = if (isImmediate) "Прямо сейчас" else {
-            "${date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))} ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}"
-        }
+            //"${date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))} ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        }*/
 }
 

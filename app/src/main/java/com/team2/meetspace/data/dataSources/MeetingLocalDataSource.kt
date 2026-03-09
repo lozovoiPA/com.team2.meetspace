@@ -17,7 +17,7 @@ public class MeetingLocalDataSource(private val meetingDao: MeetingDao) {
             withContext(Dispatchers.IO) {
                 meetingDao.create(meetingDb);
             }
-            val result = MeetingCreated(201, meetingDb);
+            val result = MeetingCreated(201, meeting);
             return result;
         } catch (e: Exception) {
             val errorExplain = "Error inserting meeting";
