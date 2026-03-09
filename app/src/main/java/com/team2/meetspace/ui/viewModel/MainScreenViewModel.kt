@@ -1,4 +1,4 @@
-package com.team2.meetspace
+package com.team2.meetspace.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import com.team2.meetspace.data.entities.Meeting

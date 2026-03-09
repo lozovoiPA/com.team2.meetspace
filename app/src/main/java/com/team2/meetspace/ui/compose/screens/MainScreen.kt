@@ -1,4 +1,4 @@
-package com.team2.meetspace.ui.screens
+package com.team2.meetspace.ui.compose.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,15 +15,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.team2.meetspace.MainViewModel
+import com.team2.meetspace.ui.viewModel.MainViewModel
 import com.team2.meetspace.data.entities.Meeting
-import com.team2.meetspace.ui.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = viewModel(),
+    bottomSheetViewModel: MeetingEditBottomSheetViewModel = viewModel(),
     onJoinMeeting: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -93,7 +95,9 @@ fun MainScreen(
         }
 
         if (state.showCreateBottomSheet) {
+
             MeetingCreateBottomSheet(
+                viewModel = bottomSheetViewModel,
                 sheetState = sheetState,
                 onDismiss = {
                     scope.launch { sheetState.hide() }
@@ -130,7 +134,7 @@ fun MeetingCard(meeting: Meeting) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Код: ${meeting.id}", fontSize = 14.sp)
+                Text("Код: ${meeting.roomIdentifier}", fontSize = 14.sp)
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = { /* копировать код */ }) {
                     Icon(Icons.Filled.ContentCopy, contentDescription = "Копировать")

@@ -1,9 +1,11 @@
 package com.team2.meetspace.data.entities
 
-sealed class Result
+abstract class Result (var code: Int) { }
 
-data class MeetingPlanned(val identifier: String) : Result()
+class MeetingPlanned(code: Int, var identifier: String): Result(code) { }
 
-data class ServerError(val errorText: String) : Result()
+class ErrorResult(code: Int, var errorText: String): Result(code) { }
 
-data class MeetingCreated(val meeting: Meeting) : Result()
+class MeetingCreated(code: Int, var meeting: Meeting): Result(code) {}
+
+data class ServerError(val errorText: String) : Result(0)
