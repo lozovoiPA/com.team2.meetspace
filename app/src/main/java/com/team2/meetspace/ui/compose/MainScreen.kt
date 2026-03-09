@@ -1,48 +1,150 @@
-package com.team2.meetspace.ui.compose
+package com.team2.meetspace.ui.screens
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.team2.meetspace.MainViewModel
+import com.team2.meetspace.data.entities.Meeting
+import com.team2.meetspace.ui.components.MeetingCreateBottomSheet
+import kotlinx.coroutines.launch
 
-@Preview
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    onJoinMeetingButtonClicked: () -> Unit = {}
-){
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Text(
-            text = "Главный экран\nВстречи, параметры встреч",
-            color = Color.Gray,
-            fontSize = 20.sp,
-            textAlign = TextAlign.Center
-        )
-        Button(
-            onClick = { onJoinMeetingButtonClicked(); },
+    viewModel: MainViewModel = viewModel(),
+    onJoinMeeting: () -> Unit = {}
+) {
+    val state by viewModel.uiState.collectAsState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val scope = rememberCoroutineScope()
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.showCreateSheet() },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Filled.Add, "Создать встречу", tint = Color.White)
+            }
+        }
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .align(Alignment.TopCenter) // Aligns the button to the bottom center
-                .width(300.dp)
-                .padding(
-                    horizontal = 32.dp,
-                    vertical = 16.dp)
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
         ) {
             Text(
-                text = "На экран подключения\nк встрече",
-                textAlign = TextAlign.Center
+                text = "Ближайшие встречи",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 12.dp)
             )
+
+            if (state.upcomingMeetings.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Нет запланированных встреч")
+                }
+            } else {
+                LazyColumn(modifier = Modifier.weight(1f)) {
+                    items(state.upcomingMeetings) { meeting ->
+                        MeetingCard(meeting)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    onClick = { viewModel.showCreateSheet() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Создать встречу")
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                OutlinedButton(
+                    onClick = onJoinMeeting,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Присоединиться")
+                }
+            }
+        }
+
+        if (state.showCreateBottomSheet) {
+            MeetingCreateBottomSheet(
+                sheetState = sheetState,
+                onDismiss = {
+                    scope.launch { sheetState.hide() }
+                    viewModel.hideCreateSheet()
+                },
+                onMeetingCreated = { meeting ->
+                    viewModel.addMeeting(meeting)
+                    scope.launch { sheetState.hide() }
+                    viewModel.hideCreateSheet()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun MeetingCard(meeting: Meeting) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = meeting.description.ifBlank { "Проверка проделанной работы" },
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = meeting.formattedDateTime,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Код: ${meeting.id}", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = { /* копировать код */ }) {
+                    Icon(Icons.Filled.ContentCopy, contentDescription = "Копировать")
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(onClick = { /* войти */ }) {
+                    Text("Войти")
+                }
+            }
         }
     }
 }
