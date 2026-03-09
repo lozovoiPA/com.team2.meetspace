@@ -1,6 +1,5 @@
 package com.team2.meetspace
 
-import android.content.Context
 import androidx.compose.ui.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,12 +16,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.room.Database
-import androidx.room.Room
-import androidx.room.RoomDatabase
-import com.team2.meetspace.data.dataSources.MeetingDao
-import com.team2.meetspace.data.dataSources.MeetspaceAppDb
-import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.ui.compose.CallScreen
 import com.team2.meetspace.ui.compose.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.LandingScreen

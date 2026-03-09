@@ -3,6 +3,7 @@ package com.team2.meetspace.data.repositories
 import com.team2.meetspace.data.dataSources.MeetingLocalDataSource
 import com.team2.meetspace.data.dataSources.RoomRemoteDataSource
 import com.team2.meetspace.data.entities.Meeting
+import com.team2.meetspace.data.entities.MeetingDbEntity
 import com.team2.meetspace.data.entities.MeetingPlanned
 import com.team2.meetspace.data.entities.Result
 
@@ -24,9 +25,10 @@ public class MeetingRepository(
             else -> return result;
         }
         val newMeeting = Meeting(
-            0,
+            timestamp,
             identifier,
-            description);
+            description
+        );
 
         result = meetingsLocal.create(newMeeting);
         return result;

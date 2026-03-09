@@ -5,9 +5,23 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "meetings")
-data class Meeting(
-    @PrimaryKey(autoGenerate = true) var id: Int,
-    @ColumnInfo(name = "room_identifier") var roomIdentifier: String,
-    var description: String
+data class MeetingDbEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int,
+    val timestamp: Int,
+    @ColumnInfo(name = "room_identifier") val roomIdentifier: String,
+    val description: String
 ) { }
+
+data class Meeting(
+    val timestamp: Int,
+    val roomIdentifier: String,
+    val description: String
+) {
+    public fun toDbEntity(): MeetingDbEntity = MeetingDbEntity(
+        id = 0,
+        timestamp = timestamp,
+        roomIdentifier = roomIdentifier,
+        description = description
+    )
+}
 

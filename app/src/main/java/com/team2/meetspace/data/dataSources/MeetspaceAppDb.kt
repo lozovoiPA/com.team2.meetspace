@@ -4,12 +4,12 @@ import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Insert
 import androidx.room.RoomDatabase
-import com.team2.meetspace.data.entities.Meeting
+import com.team2.meetspace.data.entities.MeetingDbEntity
 
 @Database(
     version = 1,
     entities = [
-        Meeting::class
+        MeetingDbEntity::class
     ]
 )
 abstract class MeetspaceAppDb : RoomDatabase(){
@@ -18,6 +18,6 @@ abstract class MeetspaceAppDb : RoomDatabase(){
 
 @Dao
 interface MeetingDao {
-    @Insert(entity = Meeting::class)
-    fun create(meeting: Meeting)
+    @Insert(entity = MeetingDbEntity::class)
+    fun create(meeting: MeetingDbEntity)
 }
