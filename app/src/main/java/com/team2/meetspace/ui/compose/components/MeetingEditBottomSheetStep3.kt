@@ -28,7 +28,7 @@ import com.team2.meetspace.data.entities.UserContact
 @Composable
 fun Step3Contacts(
     contacts: List<UserContact>,
-    selectedContacts: SnapshotStateList<UserContact>,
+    selectedContacts: List<UserContact>,
     onContactToggled: (UserContact, Boolean) -> Unit,
     onSave: () -> Unit
 ) {

@@ -18,12 +18,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team2.meetspace.ui.viewModel.MainViewModel
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = viewModel(),
+    bottomSheetViewModel: MeetingEditBottomSheetViewModel = viewModel(),
     onJoinMeeting: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -93,7 +95,9 @@ fun MainScreen(
         }
 
         if (state.showCreateBottomSheet) {
+
             MeetingCreateBottomSheet(
+                viewModel = bottomSheetViewModel,
                 sheetState = sheetState,
                 onDismiss = {
                     scope.launch { sheetState.hide() }

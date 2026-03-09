@@ -12,7 +12,7 @@ public class MeetingRepository(
     private val meetingsLocal: MeetingLocalDataSource
 ) {
     suspend fun create(
-        timestamp: Int,
+        timestamp: Long,
         description: String) : Result
     {
         var result = roomsRemote.create(timestamp);

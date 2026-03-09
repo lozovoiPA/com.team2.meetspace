@@ -10,14 +10,14 @@ import java.util.UUID
 public class RoomRemoteDataSource(var connectivityManager: ConnectivityManager) {
 
     // Создание комнаты на время
-    public fun create(timestamp: Int): Result {
+    public fun create(timestamp: Long): Result {
         if(Dependencies.NetworkHelper().checkConnection(connectivityManager)){
             return sendRoomCreateRequest(timestamp);
         }
         return ErrorResult(0, "No internet connection");
     }
 
-    private fun sendRoomCreateRequest(timestamp: Int): Result {
+    private fun sendRoomCreateRequest(timestamp: Long): Result {
         return MeetingPlanned(200, UUID.randomUUID().toString());
     }
 }

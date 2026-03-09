@@ -25,8 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.UserContact
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
+import com.team2.meetspace.ui.viewModel.MeetingEditStep
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -37,65 +40,49 @@ import java.time.Instant
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeetingCreateBottomSheet(
+    viewModel: MeetingEditBottomSheetViewModel = viewModel(),
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onMeetingCreated: (Meeting) -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    var currentStep by remember { mutableIntStateOf(1) }
-    var isImmediate by remember { mutableStateOf(true) }
-    var description by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf(LocalDate.now().plusDays(1)) }
-    var selectedTime by remember { mutableStateOf(LocalTime.of(10, 35)) }
-
-    var contacts by remember { mutableStateOf<List<UserContact>>(emptyList()) }
-    val selectedContacts = remember { mutableStateListOf<UserContact>() }
-
-    var showPermissionDialog by remember { mutableStateOf(false) }
+    val state by viewModel.uiState.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            contacts = loadContacts(context)
+            //state.contacts = loadContacts(context)
         } else {
-            showPermissionDialog = true
+            state.showPermissionDialog = true
         }
     }
 
-    LaunchedEffect(currentStep) {
-        if (currentStep == 3 && contacts.isEmpty()) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) ==
-                PackageManager.PERMISSION_GRANTED
-            ) {
-                contacts = loadContacts(context)
-            } else {
-                permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-            }
+    if (state.currentStep == MeetingEditStep.AskingUserContactsPermission) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            AlertDialog(
+                onDismissRequest = { viewModel.skipContacts(); },
+                title = { Text("Разрешить приложению Meetspace иметь доступ к контактам?") },
+                text = { Text("Для выбора участников встречи необходим доступ к контактам") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.nextStep();
+                        permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    }) {
+                        Text("Разрешить")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.skipContacts(); }) {
+                        Text("Запретить")
+                    }
+                }
+            )
         }
-    }
-
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            title = { Text("Разрешить приложению Meetspace иметь доступ к контактам?") },
-            text = { Text("Для выбора участников встречи необходим доступ к контактам") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showPermissionDialog = false
-                    permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                }) {
-                    Text("Разрешить")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text("Запретить")
-                }
-            }
-        )
+        else {
+            viewModel.nextStep();
+        }
     }
 
     ModalBottomSheet(
@@ -112,78 +99,67 @@ fun MeetingCreateBottomSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(vertical = 16.dp)
             ) {
-                if (currentStep > 1) {
-                    IconButton(onClick = { currentStep-- }) {
+                if (state.currentStep.allowsPreviousStep) {
+                    IconButton(onClick = { viewModel.previousStep(); }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
                     }
                 }
                 Text(
-                    text = when (currentStep) {
-                        1 -> "Создать встречу"
-                        2 -> "Запланировать встречу"
-                        3 -> "Контакты"
-                        else -> "Создать встречу"
+                    text = when (state.currentStep) {
+                        MeetingEditStep.Creation -> "Создать встречу"
+                        MeetingEditStep.TimestampSelection -> "Запланировать встречу"
+                        MeetingEditStep.UserContactsSelection -> "Контакты"
+                        else -> ""
                     },
                     style = MaterialTheme.typography.titleLarge
                 )
                 Spacer(Modifier.weight(1f))
-                Text("шаг $currentStep", style = MaterialTheme.typography.bodyMedium)
+                Text("шаг ${state.currentStep.index}", style = MaterialTheme.typography.bodyMedium)
             }
 
             HorizontalDivider()
 
             Spacer(Modifier.height(16.dp))
 
-            when (currentStep) {
-                1 -> Step1TypeAndDescription(
-                    isImmediate = isImmediate,
-                    onImmediateChange = { isImmediate = it },
-                    description = description,
-                    onDescriptionChange = { description = it },
-                    onNext = { currentStep = 2 }
-                )
-
-                2 -> {
-                    if (isImmediate) {
-                        LaunchedEffect(Unit) {
-                            currentStep = 3
-                        }
-                    } else {
-                        Step2DateTime(
-                            selectedDate = selectedDate,
-                            selectedTime = selectedTime,
-                            onDateChange = { selectedDate = it },
-                            onTimeChange = { selectedTime = it },
-                            onNext = { currentStep = 3 }
-                        )
-                    }
-                }
-
-                3 -> Step3Contacts(
-                    contacts = contacts,
-                    selectedContacts = selectedContacts,
-                    onContactToggled = { contact, checked ->
-                        if (checked) {
-                            if (!selectedContacts.contains(contact)) {
-                                selectedContacts.add(contact)
+            when(state.currentStep) {
+                MeetingEditStep.Creation ->
+                    Step1TypeAndDescription(
+                        isImmediate = state.createNow,
+                        onImmediateChange = { now -> viewModel.setCreationTime(now); },
+                        description = state.description,
+                        onDescriptionChange = { description -> viewModel.changeDescription(description); },
+                        onNext = { viewModel.nextStep(); }
+                    );
+                MeetingEditStep.TimestampSelection ->
+                    Step2DateTime(
+                        selectedDate = state.selectedDate,
+                        selectedTime = state.selectedTime,
+                        onDateChange = { date -> viewModel.changeDate(date); },
+                        onTimeChange = { time -> viewModel.changeTime(time); },
+                        onNext = { viewModel.nextStep(); }
+                    );
+                MeetingEditStep.UserContactsSelection ->
+                    Step3Contacts(
+                        contacts = state.contacts,
+                        selectedContacts = state.selectedContacts,
+                        onContactToggled = { contact, checked ->
+                            if (checked) {
+                                if (!state.selectedContacts.contains(contact)) {
+                                    //state.selectedContacts.add(contact)
+                                }
+                            } else {
+                                //state.selectedContacts.removeAll { it.phone == contact.phone }
                             }
-                        } else {
-                            selectedContacts.removeAll { it.phone == contact.phone }
+                        },
+                        onSave = {
+                            viewModel.nextStep();
+                            scope.launch { sheetState.hide() }
                         }
-                    },
-                    onSave = {
-                        val meeting = Meeting(
-                            timestamp = selectedTime.hour,
-                            description = description.ifBlank { "Проверка проделанной работы" },
-                            roomIdentifier = "10",
-                            users = selectedContacts.toList()
-                        )
-                        onMeetingCreated(meeting)
-                        scope.launch { sheetState.hide() }
-                    }
-                )
+                    );
+                MeetingEditStep.SendForm -> { viewModel.createMeeting(); }
+                MeetingEditStep.Finished -> { onMeetingCreated(state.meeting); }
+                else -> {};
             }
-
             Spacer(Modifier.height(24.dp))
         }
     }

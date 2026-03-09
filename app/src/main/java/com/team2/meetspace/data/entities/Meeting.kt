@@ -11,13 +11,13 @@ import java.time.format.DateTimeFormatter
 @Entity(tableName = "meetings")
 data class MeetingDbEntity(
     @PrimaryKey(autoGenerate = true) val id: Int,
-    val timestamp: Int,
+    val timestamp: Long,
     @ColumnInfo(name = "room_identifier") val roomIdentifier: String,
     val description: String
 ) { }
 
 data class Meeting(
-    val timestamp: Int,
+    val timestamp: Long,
     val roomIdentifier: String,
     val description: String,
     val users: List<UserContact> = emptyList()
