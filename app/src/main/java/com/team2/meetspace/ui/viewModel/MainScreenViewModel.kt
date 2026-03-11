@@ -1,4 +1,4 @@
-package com.team2.meetspace
+package com.team2.meetspace.ui.viewModel
 
 import android.Manifest
 import android.app.Application

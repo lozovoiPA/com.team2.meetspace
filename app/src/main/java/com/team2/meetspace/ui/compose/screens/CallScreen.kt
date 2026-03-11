@@ -1,4 +1,4 @@
-package com.team2.meetspace.ui.screens
+package com.team2.meetspace.ui.compose.screens
 
 
 import android.content.Context

@@ -2,7 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-
+    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -41,7 +42,14 @@ android {
 }
 
 dependencies {
-    implementation("androidx.compose.material3:material3:1.3.0")
+
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+
+    implementation("com.google.dagger:hilt-android:2.57.1")
+    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
+
+    implementation(libs.androidx.compose.material3.v130)
     implementation("androidx.compose.material:material-icons-core:1.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.0")
     implementation("androidx.compose.ui:ui:1.7.0")

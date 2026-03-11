@@ -1,4 +1,4 @@
-package com.team2.meetspace.ui.screens
+package com.team2.meetspace.ui.compose.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +14,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.team2.meetspace.MainViewModel
+import com.team2.meetspace.ui.viewModel.MainViewModel
 import com.team2.meetspace.data.entities.Meeting
-import com.team2.meetspace.ui.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -26,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = viewModel(),
+    bottomSheetViewModel: MeetingEditBottomSheetViewModel = viewModel(),
     onJoinMeeting: () -> Unit = {},
     onEnterMeeting: (String) -> Unit = {},
     onMeetingButtonClicked: () -> Unit
@@ -167,7 +169,9 @@ fun MainScreen(
         }
 
         if (state.showCreateBottomSheet) {
+
             MeetingCreateBottomSheet(
+                viewModel = bottomSheetViewModel,
                 sheetState = sheetState,
                 onDismiss = {
                     scope.launch { sheetState.hide() }
@@ -204,7 +208,6 @@ fun MeetingCard(meeting: Meeting, onEnterClick: () -> Unit) {
                 fontSize = 16.sp
             )
             Spacer(modifier = Modifier.height(4.dp))
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -212,7 +215,7 @@ fun MeetingCard(meeting: Meeting, onEnterClick: () -> Unit) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Код: ${meeting.id}",
+                        text = "Код: ${meeting.roomIdentifier}",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

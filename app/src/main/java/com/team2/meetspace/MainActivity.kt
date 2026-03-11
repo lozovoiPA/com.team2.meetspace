@@ -12,16 +12,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.team2.meetspace.ui.screens.CallScreen
-import com.team2.meetspace.ui.screens.JoinMeetingScreen
-import com.team2.meetspace.ui.screens.LandingScreen
-import com.team2.meetspace.ui.screens.MainScreen
-import com.team2.meetspace.ui.screens.MeetingScreen
+import com.team2.meetspace.data.repositories.MeetingRepository
+import com.team2.meetspace.ui.compose.screens.CallScreen
+import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
+import com.team2.meetspace.ui.compose.screens.LandingScreen
+import com.team2.meetspace.ui.compose.screens.MainScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
+import dagger.hilt.android.HiltAndroidApp
 
 enum class MeetspaceScreen {
     Landing,
@@ -34,25 +37,25 @@ enum class MeetspaceScreen {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dependencies = Dependencies(this);
+        val factory = MeetingEditBottomSheetViewModelFactory(dependencies);
+
         enableEdgeToEdge()
         setContent {
             MeetspaceTheme {
-                MeetspaceApp()
+                Scaffold(modifier = Modifier.fillMaxSize().background(Color.White)) { innerPadding ->
+                    MeetspaceAppNavHost(innerPadding, factory);
+                }
             }
         }
     }
 }
 
-@Composable
-fun MeetspaceApp() {
-    Scaffold(modifier = Modifier.fillMaxSize().background(Color.White)) { innerPadding ->
-        MeetspaceAppNavHost(innerPadding)
-    }
-}
 
 @Composable
 fun MeetspaceAppNavHost(
     innerPadding: PaddingValues,
+    factory: MeetingEditBottomSheetViewModelFactory,
     navController: NavHostController = rememberNavController()
 ) {
     NavHost(
@@ -70,6 +73,7 @@ fun MeetspaceAppNavHost(
 
         composable(route = MeetspaceScreen.Main.name) {
             MainScreen(
+                bottomSheetViewModel = viewModel(factory = factory),
                 onJoinMeeting = {
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
                 },
