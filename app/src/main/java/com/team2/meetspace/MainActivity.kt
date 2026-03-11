@@ -22,6 +22,7 @@ import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.screens.LandingScreen
 import com.team2.meetspace.ui.compose.screens.MainScreen
+import com.team2.meetspace.ui.compose.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import dagger.hilt.android.HiltAndroidApp
@@ -30,7 +31,8 @@ enum class MeetspaceScreen {
     Landing,
     Main,
     JoinMeeting,
-    Call
+    Call,
+    MeetingInfo
 }
 
 class MainActivity : ComponentActivity() {
@@ -75,17 +77,23 @@ fun MeetspaceAppNavHost(
                 bottomSheetViewModel = viewModel(factory = factory),
                 onJoinMeeting = {
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
                 }
             )
         }
 
         composable(route = MeetspaceScreen.JoinMeeting.name) {
             JoinMeetingScreen(
-                onNextButtonClicked = {
+                onNextButtonClicked = {roomCode, userName ->
                     navController.navigate(MeetspaceScreen.Call.name)
                 },
                 onCancelButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
                 }
             )
         }
@@ -95,6 +103,14 @@ fun MeetspaceAppNavHost(
                 onHangupButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
                 }
+            )
+        }
+
+        composable(route = MeetspaceScreen.MeetingInfo.name) {
+            MeetingScreen(
+                onHomeButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                },
             )
         }
     }
