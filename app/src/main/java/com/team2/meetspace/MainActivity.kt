@@ -22,6 +22,7 @@ import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.screens.LandingScreen
 import com.team2.meetspace.ui.compose.screens.MainScreen
+import com.team2.meetspace.ui.compose.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import dagger.hilt.android.HiltAndroidApp

@@ -1,5 +1,7 @@
-package com.team2.meetspace.ui.screens
+package com.team2.meetspace.ui.compose.screens
 
+import android.content.Context
+import android.net.ConnectivityManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
@@ -10,17 +12,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.team2.meetspace.MainViewModel
+import com.team2.meetspace.ui.viewModel.MainViewModel
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import com.team2.meetspace.ui.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
 import kotlinx.coroutines.launch
 import com.team2.meetspace.data.entities.Meeting
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.ui.graphics.Color
-
+import androidx.compose.ui.platform.LocalContext
+import com.team2.meetspace.Dependencies
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,7 +83,9 @@ fun MeetingScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
 
-            if (!state.isConnected) {
+            if (
+                !Dependencies.NetworkHelper().checkConnection(LocalContext.current.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -178,7 +183,7 @@ private fun MeetingCardInfo(meeting: Meeting) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Код: ${meeting.id}",
+                        text = "Код: ${meeting.roomIdentifier}",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

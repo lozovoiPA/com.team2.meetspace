@@ -45,20 +45,7 @@ class JoinViewModel : ViewModel() {
     private val _state = mutableStateOf(JoinState())
     val state: State<JoinState> = _state
 
-    private var meetingsList: List<Meeting> = listOf(
-        Meeting(
-            id = "123",
-            date = LocalDate.now(),
-            time = LocalTime.of(10, 0),
-            isImmediate = true
-        ),
-        Meeting(
-            id = "000",
-            date = LocalDate.now().plusDays(1),
-            time = LocalTime.of(14, 30),
-            isImmediate = false
-        )
-    )
+    private var meetingsList: List<Meeting> = listOf()
 
     fun setMeetingsList(meetings: List<Meeting>) {
         meetingsList = meetings
@@ -74,10 +61,11 @@ class JoinViewModel : ViewModel() {
         _state.value = _state.value.copy(userName = newName)
     }
     fun roomCheck(roomId: String) {
-        val foundMeeting = meetingsList.find { it.id == roomId }
+        val foundMeeting = meetingsList.find { it.roomIdentifier == roomId }
 
         val status = when {
             foundMeeting == null -> ValidStatus.NotFound
+            /*
             !foundMeeting.isImmediate -> {
                 val meetingDateTime = LocalDateTime.of(foundMeeting.date, foundMeeting.time)
                 val thresholdTime = LocalDateTime.now().plusMinutes(30)
@@ -87,7 +75,7 @@ class JoinViewModel : ViewModel() {
                 } else {
                     ValidStatus.Valid
                 }
-            }
+            }*/
             else -> ValidStatus.Valid
         }
 

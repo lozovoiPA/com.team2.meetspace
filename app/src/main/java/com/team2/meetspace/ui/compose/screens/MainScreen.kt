@@ -1,5 +1,7 @@
 package com.team2.meetspace.ui.compose.screens
 
+import android.content.Context
+import android.net.ConnectivityManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalContext
+import com.team2.meetspace.Dependencies
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -122,7 +126,9 @@ fun MainScreen(
             )
 
             Spacer(modifier = Modifier.height(20.dp))
-            if (!state.isConnected) {
+            if (
+                !Dependencies.NetworkHelper().checkConnection(LocalContext.current.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -158,7 +164,7 @@ fun MainScreen(
                     items(state.upcomingMeetings) { meeting ->
                         MeetingCard(
                             meeting = meeting,
-                            onEnterClick = { onEnterMeeting(meeting.id) }
+                            onEnterClick = { onEnterMeeting(meeting.roomIdentifier) }
                         )
                     }
                 }
