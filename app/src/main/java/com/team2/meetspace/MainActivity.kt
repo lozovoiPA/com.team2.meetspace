@@ -20,13 +20,15 @@ import com.team2.meetspace.ui.screens.CallScreen
 import com.team2.meetspace.ui.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.screens.LandingScreen
 import com.team2.meetspace.ui.screens.MainScreen
+import com.team2.meetspace.ui.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 
 enum class MeetspaceScreen {
     Landing,
     Main,
     JoinMeeting,
-    Call
+    Call,
+    MeetingInfo
 }
 
 class MainActivity : ComponentActivity() {
@@ -70,17 +72,23 @@ fun MeetspaceAppNavHost(
             MainScreen(
                 onJoinMeeting = {
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
                 }
             )
         }
 
         composable(route = MeetspaceScreen.JoinMeeting.name) {
             JoinMeetingScreen(
-                onNextButtonClicked = {
+                onNextButtonClicked = {roomCode, userName ->
                     navController.navigate(MeetspaceScreen.Call.name)
                 },
                 onCancelButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
                 }
             )
         }
@@ -90,6 +98,14 @@ fun MeetspaceAppNavHost(
                 onHangupButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
                 }
+            )
+        }
+
+        composable(route = MeetspaceScreen.MeetingInfo.name) {
+            MeetingScreen(
+                onHomeButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                },
             )
         }
     }
