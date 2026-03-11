@@ -6,11 +6,16 @@ import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
+import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.dataSources.MeetingLocalDataSource
 import com.team2.meetspace.data.dataSources.MeetspaceAppDb
 import com.team2.meetspace.data.dataSources.RoomRemoteDataSource
 import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneId
 
 class Dependencies(var context: Context) {
     init {
@@ -32,7 +37,19 @@ class Dependencies(var context: Context) {
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
             return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
         }
+    }
 
+    public class TimestampHelper {
+        public fun dateTimeToTimestamp(date: LocalDate, time: LocalTime): Long {
+            val dateTime = date.atTime(time);
+            return dateTimeToTimestamp(dateTime);
+        }
+
+        public fun dateTimeToTimestamp(dateTime: LocalDateTime): Long {
+            val zonedDateTime = dateTime.atZone(PreferencesManager.systemTimeZone);
+            val timestamp = zonedDateTime.toInstant().toEpochMilli();
+            return timestamp;
+        }
     }
 
     // Т.к. доступ из объекта, который инициализируется по контексту, то Db != null

@@ -12,11 +12,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.team2.meetspace.data.PreferencesManager
+import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
@@ -26,6 +29,12 @@ import com.team2.meetspace.ui.compose.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.LocalTime
+import java.util.UUID
 
 enum class MeetspaceScreen {
     Landing,
@@ -40,6 +49,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val dependencies = Dependencies(this);
         val factory = MeetingEditBottomSheetViewModelFactory(dependencies);
+
+        // Создание моков встреч в БД
+        val meetingsList: List<Meeting> = listOf(
+            Meeting(
+                roomIdentifier = UUID.randomUUID().toString(),
+                timestamp = Dependencies.TimestampHelper().dateTimeToTimestamp(
+                    LocalDate.now(PreferencesManager.systemTimeZone),
+                    LocalTime.of(10, 0)),
+                description = "Обсуждение проделанной работы"
+            ),
+            Meeting(
+                roomIdentifier = UUID.randomUUID().toString(),
+                timestamp = Dependencies.TimestampHelper().dateTimeToTimestamp(
+                    LocalDate.now(PreferencesManager.systemTimeZone).plusDays(1),
+                    LocalTime.of(14, 30)),
+                description = "Подготовка отчетности"
+            )
+        )
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                dependencies.meetingLocalDataSource.create(meetingsList[0]);
+                dependencies.meetingLocalDataSource.create(meetingsList[1]);
+            }
+        }
 
         enableEdgeToEdge()
         setContent {

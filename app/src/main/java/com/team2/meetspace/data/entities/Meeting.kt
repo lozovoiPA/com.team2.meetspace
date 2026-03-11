@@ -3,10 +3,15 @@ package com.team2.meetspace.data.entities
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 
 @Entity(tableName = "meetings")
 data class MeetingDbEntity(
@@ -32,10 +37,23 @@ data class Meeting(
         roomIdentifier = roomIdentifier,
         description = description
     )
-    val formattedDateTime: String = "12.25"
-        /*
-        get() = if (isImmediate) "Прямо сейчас" else {
-            //"${date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))} ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}"
-        }*/
+    val formattedDateTime: String
+        get() {
+            return "${getDate()} ${getTime()}"
+        }
+
+    public fun getDate(): String {
+        val instant = Instant.ofEpochMilli(timestamp);
+        val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        val formatter = DateTimeFormatter.ofPattern("MM:dd");
+        return formatter.format(localDate);
+    }
+
+    public fun getTime(): String {
+        val instant = Instant.ofEpochMilli(timestamp);
+        val localTime = instant.atZone(ZoneId.systemDefault()).toLocalTime();
+        val formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return localTime.format(formatter);
+    }
 }
 
