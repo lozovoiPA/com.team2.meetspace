@@ -4,44 +4,147 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.team2.meetspace.data.PreferencesManager
+import com.team2.meetspace.data.entities.Meeting
+import com.team2.meetspace.data.repositories.MeetingRepository
+import com.team2.meetspace.ui.compose.screens.CallScreen
+import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
+import com.team2.meetspace.ui.compose.screens.LandingScreen
+import com.team2.meetspace.ui.compose.screens.MainScreen
+import com.team2.meetspace.ui.compose.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
+import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
+import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.LocalTime
+import java.util.UUID
+
+enum class MeetspaceScreen {
+    Landing,
+    Main,
+    JoinMeeting,
+    Call,
+    MeetingInfo
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val dependencies = Dependencies(this);
+        val factory = MeetingEditBottomSheetViewModelFactory(dependencies);
+
+        // Создание моков встреч в БД
+        val meetingsList: List<Meeting> = listOf(
+            Meeting(
+                roomIdentifier = UUID.randomUUID().toString(),
+                timestamp = Dependencies.TimestampHelper().dateTimeToTimestamp(
+                    LocalDate.now(PreferencesManager.systemTimeZone),
+                    LocalTime.of(10, 0)),
+                description = "Обсуждение проделанной работы"
+            ),
+            Meeting(
+                roomIdentifier = UUID.randomUUID().toString(),
+                timestamp = Dependencies.TimestampHelper().dateTimeToTimestamp(
+                    LocalDate.now(PreferencesManager.systemTimeZone).plusDays(1),
+                    LocalTime.of(14, 30)),
+                description = "Подготовка отчетности"
+            )
+        )
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                dependencies.meetingLocalDataSource.create(meetingsList[0]);
+                dependencies.meetingLocalDataSource.create(meetingsList[1]);
+            }
+        }
+
         enableEdgeToEdge()
         setContent {
             MeetspaceTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Scaffold(modifier = Modifier.fillMaxSize().background(Color.White)) { innerPadding ->
+                    MeetspaceAppNavHost(innerPadding, factory);
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    MeetspaceTheme {
-        Greeting("Android")
+fun MeetspaceAppNavHost(
+    innerPadding: PaddingValues,
+    factory: MeetingEditBottomSheetViewModelFactory,
+    navController: NavHostController = rememberNavController()
+) {
+    NavHost(
+        navController = navController,
+        startDestination = MeetspaceScreen.Landing.name,
+        modifier = Modifier.padding(innerPadding)
+    ) {
+        composable(route = MeetspaceScreen.Landing.name) {
+            LandingScreen(
+                onNextButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                }
+            )
+        }
+
+        composable(route = MeetspaceScreen.Main.name) {
+            MainScreen(
+                bottomSheetViewModel = viewModel(factory = factory),
+                onJoinMeeting = {
+                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
+                }
+            )
+        }
+
+        composable(route = MeetspaceScreen.JoinMeeting.name) {
+            JoinMeetingScreen(
+                onNextButtonClicked = {roomCode, userName ->
+                    navController.navigate(MeetspaceScreen.Call.name)
+                },
+                onCancelButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                },
+                onMeetingButtonClicked = {
+                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
+                }
+            )
+        }
+
+        composable(route = MeetspaceScreen.Call.name) {
+            CallScreen(
+                onHangupButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                }
+            )
+        }
+
+        composable(route = MeetspaceScreen.MeetingInfo.name) {
+            MeetingScreen(
+                onHomeButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
+                },
+            )
+        }
     }
 }
