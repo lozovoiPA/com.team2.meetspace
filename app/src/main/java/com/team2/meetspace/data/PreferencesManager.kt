@@ -2,6 +2,7 @@ package com.team2.meetspace.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.time.ZoneId
 
 class PreferencesManager(context: Context) {
     private val sharedPreferences: SharedPreferences =
@@ -17,5 +18,7 @@ class PreferencesManager(context: Context) {
 
     companion object {
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+
+        public val systemTimeZone = ZoneId.systemDefault();
     }
 }

@@ -8,6 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.team2.meetspace.Dependencies
+import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.entities.ErrorResult
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.ServerError
@@ -35,7 +37,7 @@ data class MeetingEditBottomSheetState(
     var currentStep: MeetingEditStep = MeetingEditStep.Creation,
     var createNow: Boolean = true,
     var description: String = "",
-    var selectedDate: LocalDate = LocalDate.now(),
+    var selectedDate: LocalDate = LocalDate.now(PreferencesManager.systemTimeZone).plusDays(1),
     var selectedTime: LocalTime = LocalTime.now(),
 
     var contacts: List<UserContact> = emptyList(),
@@ -131,10 +133,7 @@ class MeetingEditBottomSheetViewModel(
     }
 
     fun createMeeting() {
-        val dateTime = _uiState.value.selectedDate.atTime(_uiState.value.selectedTime);
-        val systemTimeZone = ZoneId.systemDefault();
-        val zonedDateTime = dateTime.atZone(systemTimeZone)
-        val timestamp = zonedDateTime.toInstant().toEpochMilli()
+        val timestamp = Dependencies.TimestampHelper().dateTimeToTimestamp(_uiState.value.selectedDate, _uiState.value.selectedTime);
 
         viewModelScope.launch {
             when(val result = meetingRepository.create(timestamp, _uiState.value.description)) {

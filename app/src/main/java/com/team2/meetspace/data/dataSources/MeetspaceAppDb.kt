@@ -3,6 +3,7 @@ package com.team2.meetspace.data.dataSources
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Insert
+import androidx.room.Query
 import androidx.room.RoomDatabase
 import com.team2.meetspace.data.entities.MeetingDbEntity
 
