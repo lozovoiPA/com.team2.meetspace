@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
@@ -20,7 +24,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.entities.Meeting
-import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.screens.LandingScreen
@@ -28,7 +31,6 @@ import com.team2.meetspace.ui.compose.screens.MainScreen
 import com.team2.meetspace.ui.compose.screens.MeetingScreen
 import com.team2.meetspace.ui.theme.MeetspaceTheme
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
-import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,10 +49,9 @@ enum class MeetspaceScreen {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val dependencies = Dependencies(this);
-        val factory = MeetingEditBottomSheetViewModelFactory(dependencies);
+        val dependencies = Dependencies(this)
+        val factory = MeetingEditBottomSheetViewModelFactory(dependencies)
 
-        // Создание моков встреч в БД
         val meetingsList: List<Meeting> = listOf(
             Meeting(
                 roomIdentifier = UUID.randomUUID().toString(),
@@ -69,8 +70,8 @@ class MainActivity : ComponentActivity() {
         )
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                dependencies.meetingLocalDataSource.create(meetingsList[0]);
-                dependencies.meetingLocalDataSource.create(meetingsList[1]);
+                dependencies.meetingLocalDataSource.create(meetingsList[0])
+                dependencies.meetingLocalDataSource.create(meetingsList[1])
             }
         }
 
@@ -78,13 +79,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MeetspaceTheme {
                 Scaffold(modifier = Modifier.fillMaxSize().background(Color.White)) { innerPadding ->
-                    MeetspaceAppNavHost(innerPadding, factory);
+                    MeetspaceAppNavHost(innerPadding, factory)
                 }
             }
         }
     }
 }
-
 
 @Composable
 fun MeetspaceAppNavHost(
@@ -92,6 +92,8 @@ fun MeetspaceAppNavHost(
     factory: MeetingEditBottomSheetViewModelFactory,
     navController: NavHostController = rememberNavController()
 ) {
+    var joinCode by remember { mutableStateOf("") }
+
     NavHost(
         navController = navController,
         startDestination = MeetspaceScreen.Landing.name,
@@ -111,6 +113,10 @@ fun MeetspaceAppNavHost(
                 onJoinMeeting = {
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
                 },
+                onEnterMeeting = { code ->
+                    joinCode = code
+                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
                 onMeetingButtonClicked = {
                     navController.navigate(MeetspaceScreen.MeetingInfo.name)
                 }
@@ -119,7 +125,8 @@ fun MeetspaceAppNavHost(
 
         composable(route = MeetspaceScreen.JoinMeeting.name) {
             JoinMeetingScreen(
-                onNextButtonClicked = {roomCode, userName ->
+                initialCode = joinCode,
+                onNextButtonClicked = { roomCode, userName ->
                     navController.navigate(MeetspaceScreen.Call.name)
                 },
                 onCancelButtonClicked = {
@@ -141,9 +148,13 @@ fun MeetspaceAppNavHost(
 
         composable(route = MeetspaceScreen.MeetingInfo.name) {
             MeetingScreen(
+                onJoinMeeting = { code ->
+                    joinCode = code
+                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
                 onHomeButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
-                },
+                }
             )
         }
     }
