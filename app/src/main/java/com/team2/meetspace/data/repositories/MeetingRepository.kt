@@ -5,6 +5,7 @@ import com.team2.meetspace.data.dataSources.RoomRemoteDataSource
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.MeetingDbEntity
 import com.team2.meetspace.data.entities.MeetingPlanned
+import com.team2.meetspace.data.entities.UserContact
 import com.team2.meetspace.data.entities.Result
 
 public class MeetingRepository(
@@ -13,7 +14,9 @@ public class MeetingRepository(
 ) {
     suspend fun create(
         timestamp: Long,
-        description: String) : Result
+        description: String,
+        userContacts: List<UserContact>
+    ) : Result
     {
         var result = roomsRemote.create(timestamp);
         if (result.code != 200){
@@ -27,10 +30,16 @@ public class MeetingRepository(
         val newMeeting = Meeting(
             timestamp,
             identifier,
-            description
+            description,
+            userContacts
         );
 
         result = meetingsLocal.create(newMeeting);
         return result;
+    }
+
+    suspend fun retrieve() : Result {
+        val result = meetingsLocal.retrieve()
+        return result
     }
 }

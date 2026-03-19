@@ -1,5 +1,10 @@
 package com.team2.meetspace.ui.viewModel
 
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team2.meetspace.Dependencies
@@ -42,11 +47,10 @@ enum class MeetingEditStep(var index: Int, var allowsPreviousStep: Boolean) {
     SendForm(7, false)
 }
 
-class MeetingEditBottomSheetViewModel @Inject constructor(
+class MeetingEditBottomSheetViewModel (
     private val meetingRepository: MeetingRepository,
     private val userContactRepository: UserContactRepository
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(MeetingEditBottomSheetState())
     val uiState = _uiState.asStateFlow()
 
@@ -71,10 +75,14 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
     fun previousStep() {
         when (uiState.value.currentStep) {
             MeetingEditStep.TimestampSelection -> {
-                _uiState.update { it.copy(currentStep = MeetingEditStep.Creation) }
+                changeStep(MeetingEditStep.Creation)
             }
             MeetingEditStep.UserContactSelection -> {
-                _uiState.update { it.copy(currentStep = MeetingEditStep.TimestampSelection) }
+                if (_uiState.value.createNow) {
+                    changeStep(MeetingEditStep.Creation)
+                } else {
+                    changeStep(MeetingEditStep.TimestampSelection)
+                }
             }
             else -> {}
         }
@@ -129,7 +137,7 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            when(val result = meetingRepository.create(timestamp, _uiState.value.description)) {
+            when(val result = meetingRepository.create(timestamp, _uiState.value.description, _uiState.value.contacts)) {
                 is MeetingCreated -> {
                     _uiState.update {
                         it.copy(
@@ -138,6 +146,7 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
                         )
                     }
                     changeStep(MeetingEditStep.Finished)
+                    Log.i("BottomSheet", "Meeting created in db")
                 }
                 is ErrorResult -> {
                     _uiState.update { it.copy(error = result.errorText) }
@@ -151,6 +160,12 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
         }
     }
 
+    fun retrieveContacts() {
+        Log.i("Info", "Зашли в retrieveContacts() вьюмодели");
+        _uiState.update { it.copy(contacts = userContactRepository.retrieve()) }
+        Log.i("Info", "Всего: ${_uiState.value.contacts.size} контактов получено");
+    }
+
     fun skipContacts() {
         if(uiState.value.currentStep == MeetingEditStep.AskingUserContactsPermission) {
             changeStep(MeetingEditStep.SendForm)
@@ -158,6 +173,14 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
     }
 
     private fun changeStep(step: MeetingEditStep) {
+        when (step) {
+            MeetingEditStep.UserContactSelection -> { retrieveContacts() }
+            else -> { }
+        }
         _uiState.update { it.copy(currentStep = step) }
+    }
+
+    public fun clear() {
+        _uiState.value = MeetingEditBottomSheetState()
     }
 }
