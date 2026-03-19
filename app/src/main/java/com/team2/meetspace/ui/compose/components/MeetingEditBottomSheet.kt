@@ -3,6 +3,7 @@ package com.team2.meetspace.ui.compose.components
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.team2.meetspace.Dependencies
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.UserContact
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
@@ -71,6 +73,18 @@ fun MeetingCreateBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
+        if (
+            !Dependencies.NetworkHelper().checkConnection(LocalContext.current.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
+        ) {
+            state.currentStep =  MeetingEditStep.Error
+            ErrorBottomSheetNoInternet(
+                onExit = {
+                    scope.launch { sheetState.hide() }
+                    state.currentStep =  MeetingEditStep.Creation
+                }
+            )
+        }
+        else {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,6 +162,33 @@ fun MeetingCreateBottomSheet(
                 else -> {}
             }
             Spacer(Modifier.height(24.dp))
+
+        }}
+    }
+}
+
+private fun loadContacts(context: Context): List<UserContact> {
+    val list = mutableListOf<UserContact>()
+    context.contentResolver.query(
+        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+        arrayOf(
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER
+        ),
+        null,
+        null,
+        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+    )?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+        val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+
+        while (cursor.moveToNext()) {
+            val name = if (nameIndex >= 0) cursor.getString(nameIndex) else null
+            val phone = if (numberIndex >= 0) cursor.getString(numberIndex) else null
+            if (!phone.isNullOrBlank()) {
+                list.add(UserContact(name, phone))
+            }
         }
     }
+    return list.distinctBy { it.phone }
 }

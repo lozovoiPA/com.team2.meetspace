@@ -120,7 +120,8 @@ fun MainScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black,
                     contentColor = Color.White
-                )
+                ),
+                enabled = state.isConnected
             )
             {
                 Text("Присоединиться")
