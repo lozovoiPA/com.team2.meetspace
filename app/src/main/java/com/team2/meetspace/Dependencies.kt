@@ -1,8 +1,6 @@
 package com.team2.meetspace
 
-import android.content.ContentResolver
 import android.content.Context
-import android.database.Cursor
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
@@ -16,6 +14,7 @@ import com.team2.meetspace.data.dataSources.UserContactLocalDataSource
 import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.data.repositories.UserContactRepository
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
+import com.team2.meetspace.ui.viewModel.MainScreenViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -55,6 +54,9 @@ class Dependencies(var context: Context) {
         }
     }
 
+    val connectivityManager: ConnectivityManager by lazy {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
     val meetingLocalDataSource: MeetingLocalDataSource by lazy {
         MeetingLocalDataSource(meetspaceAppDb!!.getMeetingDao());
     }
@@ -77,6 +79,15 @@ class MeetingEditBottomSheetViewModelFactory(var dependencies: Dependencies) : V
         return MeetingEditBottomSheetViewModel(
             dependencies.meetingRepository,
             dependencies.userContactRepository
+        ) as T
+    }
+}
+
+class MainScreenViewModelFactory(var dependencies: Dependencies) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return MainScreenViewModel(
+            dependencies.meetingRepository,
+            dependencies.connectivityManager
         ) as T
     }
 }

@@ -47,7 +47,7 @@ enum class MeetingEditStep(var index: Int, var allowsPreviousStep: Boolean) {
     SendForm(7, false)
 }
 
-class MeetingEditBottomSheetViewModel @Inject constructor(
+class MeetingEditBottomSheetViewModel (
     private val meetingRepository: MeetingRepository,
     private val userContactRepository: UserContactRepository
 ) : ViewModel() {
@@ -137,7 +137,7 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            when(val result = meetingRepository.create(timestamp, _uiState.value.description)) {
+            when(val result = meetingRepository.create(timestamp, _uiState.value.description, _uiState.value.contacts)) {
                 is MeetingCreated -> {
                     _uiState.update {
                         it.copy(
@@ -146,6 +146,7 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
                         )
                     }
                     changeStep(MeetingEditStep.Finished)
+                    Log.i("BottomSheet", "Meeting created in db")
                 }
                 is ErrorResult -> {
                     _uiState.update { it.copy(error = result.errorText) }

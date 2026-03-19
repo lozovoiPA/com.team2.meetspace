@@ -16,10 +16,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.team2.meetspace.R
 
 @Composable
 fun Step1TypeAndDescription(
@@ -88,7 +90,7 @@ fun Step1TypeAndDescription(
             value = description,
             onValueChange = onDescriptionChange,
             label = { Text("Тема встречи (необязательно)") },
-            placeholder = { Text("Ваша встреча") },
+            placeholder = { Text(stringResource(R.string.meeting_placeholder_desc)) },
             modifier = Modifier.fillMaxWidth()
         )
 

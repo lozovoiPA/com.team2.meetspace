@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Meetspace</string>
+    <string name="meeting_placeholder_desc">Ваша встреча</string>
 </resources>

@@ -1,6 +1,5 @@
 package com.team2.meetspace.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,12 +13,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.team2.meetspace.Dependencies
+import com.team2.meetspace.MainScreenViewModelFactory
 import com.team2.meetspace.MeetingEditBottomSheetViewModelFactory
 import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.screens.LandingScreen
 import com.team2.meetspace.ui.compose.screens.MainScreen
-import com.team2.meetspace.ui.compose.screens.MeetingScreen
+import com.team2.meetspace.ui.compose.screens.MeetingsScreen
 
 
 enum class MeetspaceScreen {
@@ -27,18 +28,20 @@ enum class MeetspaceScreen {
     Main,
     JoinMeeting,
     Call,
-    MeetingInfo,
-    MeetingEditBottomSheet
+    Meetings
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeetspaceAppNavHost(
     innerPadding: PaddingValues,
-    factory: MeetingEditBottomSheetViewModelFactory
+    dependencies: Dependencies
 ) {
     val navController = rememberNavController()
     var joinCode by remember { mutableStateOf("") }
+
+    val editBottomSheetFactory = MeetingEditBottomSheetViewModelFactory(dependencies)
+    val mainScreenFactory = MainScreenViewModelFactory(dependencies)
 
     NavHost(
         navController = navController,
@@ -55,7 +58,8 @@ fun MeetspaceAppNavHost(
 
         composable(route = MeetspaceScreen.Main.name) {
             MainScreen(
-                bottomSheetViewModel = viewModel(factory = factory),
+                viewModel = viewModel(factory = mainScreenFactory),
+                bottomSheetViewModel = viewModel(factory = editBottomSheetFactory),
                 onJoinMeeting = {
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
                 },
@@ -64,7 +68,20 @@ fun MeetspaceAppNavHost(
                     navController.navigate(MeetspaceScreen.JoinMeeting.name)
                 },
                 onMeetingButtonClicked = {
-                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
+                    navController.navigate(MeetspaceScreen.Meetings.name)
+                }
+            )
+        }
+
+        composable(route = MeetspaceScreen.Meetings.name) {
+            MeetingsScreen(
+                viewModel = viewModel(factory = mainScreenFactory),
+                onJoinMeeting = { code ->
+                    joinCode = code
+                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
+                },
+                onHomeButtonClicked = {
+                    navController.navigate(MeetspaceScreen.Main.name)
                 }
             )
         }
@@ -79,7 +96,7 @@ fun MeetspaceAppNavHost(
                     navController.navigate(MeetspaceScreen.Main.name)
                 },
                 onMeetingButtonClicked = {
-                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
+                    navController.navigate(MeetspaceScreen.Meetings.name)
                 }
             )
         }
@@ -87,18 +104,6 @@ fun MeetspaceAppNavHost(
         composable(route = MeetspaceScreen.Call.name) {
             CallScreen(
                 onHangupButtonClicked = {
-                    navController.navigate(MeetspaceScreen.Main.name)
-                }
-            )
-        }
-
-        composable(route = MeetspaceScreen.MeetingInfo.name) {
-            MeetingScreen(
-                onJoinMeeting = { code ->
-                    joinCode = code
-                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
-                },
-                onHomeButtonClicked = {
                     navController.navigate(MeetspaceScreen.Main.name)
                 }
             )
