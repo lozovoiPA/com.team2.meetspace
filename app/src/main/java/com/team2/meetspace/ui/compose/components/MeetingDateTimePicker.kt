@@ -26,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.team2.meetspace.Dependencies
+import com.team2.meetspace.data.PreferencesManager
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -45,10 +47,7 @@ fun DateTimePicker(
     var showTimePicker by remember { mutableStateOf(false) }
 
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate
-            .atStartOfDay(ZoneId.systemDefault())
-            .toInstant()
-            .toEpochMilli()
+        initialSelectedDateMillis = Dependencies.TimestampHelper().dateTimeToTimestamp(initialDate, initialTime)
     )
 
     val timePickerState = rememberTimePickerState(
@@ -58,7 +57,7 @@ fun DateTimePicker(
     )
 
     val selectedDate = datePickerState.selectedDateMillis?.let { millis ->
-        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+        Instant.ofEpochMilli(millis).atZone(PreferencesManager.systemTimeZone).toLocalDate()
     } ?: initialDate
 
     val selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)

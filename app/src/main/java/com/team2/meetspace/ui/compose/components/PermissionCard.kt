@@ -72,7 +72,8 @@ fun PermissionCard(
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     MspFilledButton(onClick = { onAllowClick() }, text = allowButtonText)
                     MspOutlineButton(onClick = { onDenyClick() }, text = denyButtonText)

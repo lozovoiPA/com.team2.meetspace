@@ -9,8 +9,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -23,35 +25,10 @@ import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import com.team2.meetspace.ui.viewModel.MeetingEditStep
 import kotlinx.coroutines.launch
 
-private fun loadContacts(context: Context): List<UserContact> {
-    val list = mutableListOf<UserContact>()
-    context.contentResolver.query(
-        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-        arrayOf(
-            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER
-        ),
-        null,
-        null,
-        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
-    )?.use { cursor ->
-        val nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-        val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-
-        while (cursor.moveToNext()) {
-            val name = if (nameIndex >= 0) cursor.getString(nameIndex) else null
-            val phone = if (numberIndex >= 0) cursor.getString(numberIndex) else null
-            if (!phone.isNullOrBlank()) {
-                list.add(UserContact(name, phone))
-            }
-        }
-    }
-    return list.distinctBy { it.phone }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeetingCreateBottomSheet(
+    meeting: Meeting = Meeting.emptyMeeting,
     viewModel: MeetingEditBottomSheetViewModel = viewModel(),
     sheetState: SheetState,
     onDismiss: () -> Unit,
@@ -59,13 +36,13 @@ fun MeetingCreateBottomSheet(
 ) {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
     val state by viewModel.uiState.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            viewModel.retrieveContacts()
             viewModel.nextStep()
         } else {
             viewModel.skipContacts()
@@ -74,22 +51,14 @@ fun MeetingCreateBottomSheet(
 
     if (state.currentStep == MeetingEditStep.AskingUserContactsPermission) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            AlertDialog(
-                onDismissRequest = { viewModel.skipContacts() },
-                title = { Text("Разрешить приложению Meetspace иметь доступ к контактам?") },
-                text = { Text("Для выбора участников встречи необходим доступ к контактам") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                    }) {
-                        Text("Разрешить")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.skipContacts() }) {
-                        Text("Запретить")
-                    }
-                }
+            PermissionCard(
+                icon = Icons.Outlined.AccountCircle,
+                title = "Разрешить приложению Meetspace иметь доступ к контактам?",
+                description = "Для выбора участников встречи необходим доступ к контактам",
+                allowButtonText = "Разрешить",
+                denyButtonText = "Запретить",
+                onAllowClick = { permissionLauncher.launch(Manifest.permission.READ_CONTACTS) },
+                onDenyClick = { viewModel.skipContacts() }
             )
         } else {
             LaunchedEffect(Unit) {
@@ -172,6 +141,7 @@ fun MeetingCreateBottomSheet(
                 MeetingEditStep.Finished -> {
                     LaunchedEffect(state.meeting) {
                         onMeetingCreated(state.meeting)
+                        viewModel.clear()
                     }
                 }
 

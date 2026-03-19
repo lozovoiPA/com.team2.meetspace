@@ -47,7 +47,9 @@ fun Step1TypeAndDescription(
                 .padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            RadioButton(selected = isImmediate, onClick = null)
+            RadioButton(
+                selected = isImmediate,
+                onClick = null)
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("Создать прямо сейчас",
@@ -86,7 +88,7 @@ fun Step1TypeAndDescription(
             value = description,
             onValueChange = onDescriptionChange,
             label = { Text("Тема встречи (необязательно)") },
-            placeholder = { Text("Проверка проделанной работы") },
+            placeholder = { Text("Ваша встреча") },
             modifier = Modifier.fillMaxWidth()
         )
 

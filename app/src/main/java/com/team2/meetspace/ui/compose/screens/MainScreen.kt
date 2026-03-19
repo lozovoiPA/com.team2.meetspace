@@ -2,11 +2,14 @@ package com.team2.meetspace.ui.compose.screens
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -196,7 +199,6 @@ fun MainScreen(
 @Composable
 fun MeetingCard(meeting: Meeting, onEnterClick: (String) -> Unit) {
     val context = LocalContext.current
-
     Card(
         modifier = Modifier
             .fillMaxWidth()

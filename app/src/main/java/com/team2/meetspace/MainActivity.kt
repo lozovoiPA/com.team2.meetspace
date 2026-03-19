@@ -8,11 +8,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +27,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.entities.Meeting
+import com.team2.meetspace.ui.MeetspaceAppNavHost
+import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
 import com.team2.meetspace.ui.compose.screens.CallScreen
 import com.team2.meetspace.ui.compose.screens.JoinMeetingScreen
 import com.team2.meetspace.ui.compose.screens.LandingScreen
@@ -38,13 +43,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.util.UUID
 
-enum class MeetspaceScreen {
-    Landing,
-    Main,
-    JoinMeeting,
-    Call,
-    MeetingInfo
-}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,80 +80,6 @@ class MainActivity : ComponentActivity() {
                     MeetspaceAppNavHost(innerPadding, factory)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun MeetspaceAppNavHost(
-    innerPadding: PaddingValues,
-    factory: MeetingEditBottomSheetViewModelFactory,
-    navController: NavHostController = rememberNavController()
-) {
-    var joinCode by remember { mutableStateOf("") }
-
-    NavHost(
-        navController = navController,
-        startDestination = MeetspaceScreen.Landing.name,
-        modifier = Modifier.padding(innerPadding)
-    ) {
-        composable(route = MeetspaceScreen.Landing.name) {
-            LandingScreen(
-                onNextButtonClicked = {
-                    navController.navigate(MeetspaceScreen.Main.name)
-                }
-            )
-        }
-
-        composable(route = MeetspaceScreen.Main.name) {
-            MainScreen(
-                bottomSheetViewModel = viewModel(factory = factory),
-                onJoinMeeting = {
-                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
-                },
-                onEnterMeeting = { code ->
-                    joinCode = code
-                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
-                },
-                onMeetingButtonClicked = {
-                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
-                }
-            )
-        }
-
-        composable(route = MeetspaceScreen.JoinMeeting.name) {
-            JoinMeetingScreen(
-                initialCode = joinCode,
-                onNextButtonClicked = { roomCode, userName ->
-                    navController.navigate(MeetspaceScreen.Call.name)
-                },
-                onCancelButtonClicked = {
-                    navController.navigate(MeetspaceScreen.Main.name)
-                },
-                onMeetingButtonClicked = {
-                    navController.navigate(MeetspaceScreen.MeetingInfo.name)
-                }
-            )
-        }
-
-        composable(route = MeetspaceScreen.Call.name) {
-            CallScreen(
-                onHangupButtonClicked = {
-                    navController.navigate(MeetspaceScreen.Main.name)
-                }
-            )
-        }
-
-        composable(route = MeetspaceScreen.MeetingInfo.name) {
-            MeetingScreen(
-                onJoinMeeting = { code ->
-                    joinCode = code
-                    navController.navigate(MeetspaceScreen.JoinMeeting.name)
-                },
-                onHomeButtonClicked = {
-                    navController.navigate(MeetspaceScreen.Main.name)
-                }
-            )
         }
     }
 }
