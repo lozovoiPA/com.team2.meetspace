@@ -65,7 +65,7 @@ fun MeetingCreateBottomSheet(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            val contacts = loadContacts(context)
+            viewModel.retrieveContacts()
             viewModel.nextStep()
         } else {
             viewModel.skipContacts()
@@ -119,8 +119,8 @@ fun MeetingCreateBottomSheet(
                 }
                 Text(
                     text = when (state.currentStep) {
-                        MeetingEditStep.Creation -> "Создать встречу"
-                        MeetingEditStep.TimestampSelection -> "Запланировать встречу"
+                        MeetingEditStep.Creation -> "Создать\nвстречу"
+                        MeetingEditStep.TimestampSelection -> "Запланировать\nвстречу"
                         MeetingEditStep.UserContactSelection -> "Контакты"
                         else -> ""
                     },

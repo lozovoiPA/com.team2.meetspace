@@ -1,6 +1,8 @@
 package com.team2.meetspace
 
+import android.content.ContentResolver
 import android.content.Context
+import android.database.Cursor
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
@@ -10,13 +12,13 @@ import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.dataSources.MeetingLocalDataSource
 import com.team2.meetspace.data.dataSources.MeetspaceAppDb
 import com.team2.meetspace.data.dataSources.RoomRemoteDataSource
+import com.team2.meetspace.data.dataSources.UserContactLocalDataSource
 import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.data.repositories.UserContactRepository
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.ZoneId
 
 class Dependencies(var context: Context) {
     init {
@@ -59,8 +61,11 @@ class Dependencies(var context: Context) {
     val roomRemoteDataSource: RoomRemoteDataSource by lazy {
         RoomRemoteDataSource(context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager);
     }
+    val userContactLocalDataSource: UserContactLocalDataSource by lazy {
+        UserContactLocalDataSource(context.contentResolver);
+    }
     val userContactRepository: UserContactRepository by lazy {
-        UserContactRepository(context);
+        UserContactRepository(userContactLocalDataSource);
     }
     val meetingRepository: MeetingRepository by lazy {
         MeetingRepository(roomRemoteDataSource, meetingLocalDataSource);

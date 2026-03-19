@@ -1,5 +1,6 @@
 package com.team2.meetspace.ui.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team2.meetspace.Dependencies
@@ -149,6 +150,12 @@ class MeetingEditBottomSheetViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun retrieveContacts() {
+        Log.i("Info", "Зашли в retrieveContacts() вьюмодели");
+        _uiState.update { it.copy(contacts = userContactRepository.retrieve()) }
+        Log.i("Info", "Всего: ${_uiState.value.contacts.size} контактов получено");
     }
 
     fun skipContacts() {

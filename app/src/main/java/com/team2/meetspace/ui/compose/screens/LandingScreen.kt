@@ -115,10 +115,8 @@ fun LandingScreen(
             WelcomePageContent(
                 onNext = { currentPage = 1 }
             )
-            // Push Welcome content slightly up from the very bottom
             Spacer(modifier = Modifier.weight(1f))
         } else {
-            // Description text stays at the top (below title)
             Text(
                 text = "Разрешите приложению отправлять уведомления, чтобы вы могли знать, если скоро начнется встреча.",
                 textAlign = TextAlign.Center,
@@ -126,7 +124,6 @@ fun LandingScreen(
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
-            // THIS Spacer pushes the PermissionCard to the bottom while keeping text above
             Spacer(modifier = Modifier.weight(2f))
 
             PermissionCard(

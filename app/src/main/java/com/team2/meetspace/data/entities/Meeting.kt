@@ -45,7 +45,7 @@ data class Meeting(
     public fun getDate(): String {
         val instant = Instant.ofEpochMilli(timestamp);
         val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
-        val formatter = DateTimeFormatter.ofPattern("MM:dd");
+        val formatter = DateTimeFormatter.ofPattern("dd.MM");
         return formatter.format(localDate);
     }
 
