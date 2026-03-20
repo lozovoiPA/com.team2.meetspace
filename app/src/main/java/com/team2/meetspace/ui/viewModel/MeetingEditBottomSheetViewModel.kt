@@ -1,15 +1,13 @@
 package com.team2.meetspace.ui.viewModel
 
+import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team2.meetspace.Dependencies
 import com.team2.meetspace.NetworkConnectivityObserver
 import com.team2.meetspace.data.PreferencesManager
+import com.team2.meetspace.data.SmsScheduler
 import com.team2.meetspace.data.entities.ErrorResult
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.MeetingCreated
@@ -24,8 +22,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
-import javax.inject.Inject
 
 data class MeetingEditBottomSheetState(
     var meeting: Meeting = Meeting.emptyMeeting,
@@ -69,11 +67,6 @@ class MeetingEditBottomSheetViewModel (
     val uiState = _uiState.asStateFlow()
 
     fun changeCheckedUserContact(contact: UserContact, checked: Boolean) {
-        if (_uiState.value.contacts.isEmpty()) {
-            val contacts = userContactRepository.retrieve()
-            _uiState.update { it.copy(contacts = contacts) }
-        }
-
         val currentSelected = _uiState.value.selectedContacts.toMutableList()
         val newSelected = if (checked) {
             if (!currentSelected.any { it.phone == contact.phone }) {
@@ -140,7 +133,9 @@ class MeetingEditBottomSheetViewModel (
         _uiState.update { it.copy(selectedTime = time) }
     }
 
-    fun createMeeting() {
+    fun createMeeting(context: Context) {
+        val smsScheduler = SmsScheduler(context)
+        
         val timestamp = if (_uiState.value.createNow) {
             System.currentTimeMillis()
         } else {
@@ -151,8 +146,28 @@ class MeetingEditBottomSheetViewModel (
         }
 
         viewModelScope.launch {
-            when(val result = meetingRepository.create(timestamp, _uiState.value.description, _uiState.value.contacts)) {
+            val selectedContacts = _uiState.value.selectedContacts
+            
+            when(val result = meetingRepository.create(timestamp, _uiState.value.description, selectedContacts)) {
                 is MeetingCreated -> {
+                    // Планируем SMS-уведомления
+                    val meetingDateTime = if (_uiState.value.createNow) {
+                        LocalDateTime.now()
+                    } else {
+                        LocalDateTime.of(_uiState.value.selectedDate, _uiState.value.selectedTime)
+                    }
+
+                    val phoneNumbers = selectedContacts.mapNotNull { it.phone }
+                    
+                    if (phoneNumbers.isNotEmpty()) {
+                        smsScheduler.scheduleMeetingReminders(
+                            meetingTime = meetingDateTime,
+                            description = _uiState.value.description,
+                            roomCode = result.meeting.roomIdentifier,
+                            phoneNumbers = phoneNumbers
+                        )
+                    }
+
                     _uiState.update {
                         it.copy(
                             meeting = result.meeting,
@@ -160,7 +175,7 @@ class MeetingEditBottomSheetViewModel (
                         )
                     }
                     changeStep(MeetingEditStep.Finished)
-                    Log.i("BottomSheet", "Meeting created in db")
+                    Log.i("BottomSheet", "Meeting created and SMS scheduled")
                 }
                 is ErrorResult -> {
                     _uiState.update { it.copy(error = result.errorText) }
