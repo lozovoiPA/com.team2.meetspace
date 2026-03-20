@@ -11,11 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.team2.meetspace.R
+import com.team2.meetspace.ui.compose.components.ErrorBottomSheet
 import com.team2.meetspace.ui.compose.components.MeetingEditBottomSheet
 import com.team2.meetspace.ui.viewModel.MainScreenViewModel
 import kotlinx.coroutines.launch
@@ -107,14 +110,6 @@ fun MeetingsScreen(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    /*
-                    Text(
-                        text = "Ближайшие встречи",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )*/
-
                     LazyColumn {
                         items(state.upcomingMeetings) { meeting ->
                             MeetingCard(
@@ -122,7 +117,10 @@ fun MeetingsScreen(
                                 onEnterClick = {
                                     onJoinMeeting(meeting.roomIdentifier)
                                 },
-                                enabled = isConnected
+                                enabled = isConnected,
+                                onDisabledClick = {
+                                    viewModel.showError()
+                                }
                             )
                         }
                     }
@@ -143,6 +141,21 @@ fun MeetingsScreen(
                     viewModel.hideCreateSheet()
                 }
             )
+        }
+
+        if (state.displayConnectionError) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.hideError() },
+                sheetState = sheetState
+            ) {
+                ErrorBottomSheet(
+                    onExit = {
+                        scope.launch { sheetState.hide(); viewModel.hideError() }
+                    },
+                    errorText = stringResource(com.team2.meetspace.R.string.no_internet_connection_label),
+                    description = stringResource(R.string.no_internet_connection_desc)
+                )
+            }
         }
     }
 }

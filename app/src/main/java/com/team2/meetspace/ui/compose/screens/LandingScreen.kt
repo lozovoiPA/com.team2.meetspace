@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.ui.compose.components.MspFilledButton
 import com.team2.meetspace.ui.compose.components.MspOutlineButton
+import com.team2.meetspace.ui.compose.components.PermissionCard
 import com.team2.meetspace.ui.theme.LogoGradient
 
 enum class LandingScreenStep {
@@ -74,9 +76,14 @@ fun LandingScreen(
     var currentPage by rememberSaveable { mutableStateOf(LandingScreenStep.Welcome) }
 
     val onFinishOnboarding = {
+        currentPage = LandingScreenStep.Welcome
         preferencesManager.setOnboardingCompleted()
         onNextButtonClicked()
     }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ -> onFinishOnboarding() }
 
     Column(
         modifier = Modifier
@@ -84,36 +91,37 @@ fun LandingScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (currentPage) {
-            LandingScreenStep.Welcome -> {
-                Spacer(modifier = Modifier.weight(1f))
-                MeetspaceLogo()
-                Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.weight(1f))
+        MeetspaceLogo()
+        Spacer(modifier = Modifier.height(24.dp))
 
-                WelcomePageContent(
-                    onNext = {
+        WelcomePageContent(
+            onNext = { currentPage = LandingScreenStep.Permission }
+        )
+        Spacer(modifier = Modifier.weight(1f))
+
+        if(currentPage == LandingScreenStep.Permission) {
+            PermissionCard(
+                icon = Icons.Outlined.AccountCircle,
+                title = "Разрешить приложению Meetspace доступ к сообщениям и отправке уведомлений?",
+                description = "Разрешите приложению отправлять уведомления вам и приглашенным на встречу, чтобы вы не забыли о ее начале",
+                allowButtonText = "Разрешить",
+                denyButtonText = "Пропустить",
+                onAllowClick =
+                    {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            currentPage = LandingScreenStep.Permission
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.POST_NOTIFICATIONS,
+                                    Manifest.permission.SEND_SMS
+                                )
+                            )
                         } else {
-                            onFinishOnboarding()
+                            permissionLauncher.launch(arrayOf(Manifest.permission.SEND_SMS))
                         }
-                    }
-                )
-                Spacer(modifier = Modifier.weight(1f))
-            }
-
-            LandingScreenStep.Permission -> {
-                Spacer(modifier = Modifier.height(160.dp))
-                Spacer(modifier = Modifier.weight(1f))
-                
-                MeetspaceLogo(150.dp, 14.sp)
-                Spacer(modifier = Modifier.height(32.dp))
-
-                PermissionStepContent(
-                    onNext = onFinishOnboarding,
-                    preferencesManager = preferencesManager
-                )
-            }
+                    },
+                onDenyClick = { onFinishOnboarding() }
+            )
         }
     }
 }
@@ -169,94 +177,3 @@ private fun WelcomePageContent(onNext: () -> Unit) {
     }
 }
 
-@Composable
-private fun PermissionStepContent(
-    onNext: () -> Unit,
-    preferencesManager: PreferencesManager
-) {
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ ->
-        preferencesManager.setOnboardingCompleted()
-        onNext()
-    }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Meetspace",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Разрешите приложению отправлять уведомления, чтобы вы могли знать, если скоро начнется встреча.",
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, Color.LightGray)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ChatBubbleOutline,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.DarkGray
-                )
-
-                Text(
-                    text = "Разрешить приложению Meetspace отправлять уведомления?",
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    MspFilledButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                permissionLauncher.launch(
-                                    arrayOf(
-                                        Manifest.permission.POST_NOTIFICATIONS,
-                                        Manifest.permission.SEND_SMS
-                                    )
-                                )
-                            } else {
-                                permissionLauncher.launch(arrayOf(Manifest.permission.SEND_SMS))
-                            }
-                        },
-                        text = "Разрешить"
-                    )
-                    MspOutlineButton(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            preferencesManager.setOnboardingCompleted()
-                            onNext()
-                        },
-                        text = "Запретить"
-                    )
-                }
-            }
-        }
-    }
-}
