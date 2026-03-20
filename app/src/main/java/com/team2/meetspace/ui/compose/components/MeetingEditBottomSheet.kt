@@ -1,10 +1,7 @@
 package com.team2.meetspace.ui.compose.components
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -25,7 +22,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team2.meetspace.Dependencies
 import com.team2.meetspace.R
 import com.team2.meetspace.data.entities.Meeting
-import com.team2.meetspace.data.entities.UserContact
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import com.team2.meetspace.ui.viewModel.MeetingEditStep
 import kotlinx.coroutines.launch
@@ -162,15 +158,18 @@ fun MeetingEditBottomSheet(
                         )
 
                     MeetingEditStep.SendForm -> {
+                        // Используем LaunchedEffect, чтобы вызвать создание встречи только ОДИН раз
+                        LaunchedEffect(Unit) {
+                            viewModel.createMeeting(context)
+                        }
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f),
+                                .height(200.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
                         }
-                        viewModel.createMeeting()
                     }
 
                     MeetingEditStep.Finished -> {
