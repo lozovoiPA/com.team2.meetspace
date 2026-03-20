@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,7 +37,10 @@ import com.team2.meetspace.R
 import com.team2.meetspace.data.entities.Meeting
 
 @Composable
-fun MeetingCard(meeting: Meeting, onEnterClick: (String) -> Unit) {
+fun MeetingCard(meeting: Meeting,
+                onEnterClick: (String) -> Unit,
+                enabled: Boolean = true,
+                onDisabledClick: () -> Unit = {}) {
     val context = LocalContext.current
     Card(
         modifier = Modifier
@@ -98,19 +102,25 @@ fun MeetingCard(meeting: Meeting, onEnterClick: (String) -> Unit) {
                     }
                 }
             }
-            Button(
-                onClick = { onEnterClick(meeting.roomIdentifier) },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .width(100.dp)
-                    .height(40.dp)
-            ) {
-                Text("Войти", fontSize = 14.sp)
-            }
+            MspElementWithDisabledClick(
+                @Composable{
+                    Button(
+                        onClick = { onEnterClick(meeting.roomIdentifier) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        ),
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(40.dp),
+                        enabled = enabled
+                    ) {
+                        Text("Войти", fontSize = 14.sp)
+                    } },
+                { onDisabledClick() },
+                enabled = enabled
+            )
         }
     }
 }

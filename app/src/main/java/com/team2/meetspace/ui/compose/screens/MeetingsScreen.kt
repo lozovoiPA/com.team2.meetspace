@@ -8,13 +8,15 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
+import com.team2.meetspace.ui.compose.components.MeetingEditBottomSheet
 import com.team2.meetspace.ui.viewModel.MainScreenViewModel
 import kotlinx.coroutines.launch
 import com.team2.meetspace.ui.compose.components.MeetingCard
@@ -27,6 +29,7 @@ fun MeetingsScreen(
     onHomeButtonClicked: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+    val isConnected by state.isConnected.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
@@ -116,7 +119,10 @@ fun MeetingsScreen(
                         items(state.upcomingMeetings) { meeting ->
                             MeetingCard(
                                 meeting = meeting,
-                                onEnterClick = { onJoinMeeting(meeting.roomIdentifier) }
+                                onEnterClick = {
+                                    onJoinMeeting(meeting.roomIdentifier)
+                                },
+                                enabled = isConnected
                             )
                         }
                     }
@@ -125,7 +131,7 @@ fun MeetingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
         if (state.showCreateBottomSheet) {
-            MeetingCreateBottomSheet(
+            MeetingEditBottomSheet(
                 sheetState = sheetState,
                 onDismiss = {
                     scope.launch { sheetState.hide() }

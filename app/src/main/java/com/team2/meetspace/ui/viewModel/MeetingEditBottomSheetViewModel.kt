@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.team2.meetspace.Dependencies
+import com.team2.meetspace.NetworkConnectivityObserver
 import com.team2.meetspace.data.PreferencesManager
 import com.team2.meetspace.data.entities.ErrorResult
 import com.team2.meetspace.data.entities.Meeting
@@ -16,7 +17,10 @@ import com.team2.meetspace.data.entities.UserContact
 import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.data.repositories.UserContactRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -34,7 +38,8 @@ data class MeetingEditBottomSheetState(
     var selectedTime: LocalTime = LocalTime.now(),
     var contacts: List<UserContact> = emptyList(),
     var selectedContacts: List<UserContact> = emptyList(),
-    var showPermissionDialog: Boolean = false
+    var showPermissionDialog: Boolean = false,
+    var isConnected: StateFlow<Boolean>
 )
 
 enum class MeetingEditStep(var index: Int, var allowsPreviousStep: Boolean) {
@@ -49,9 +54,18 @@ enum class MeetingEditStep(var index: Int, var allowsPreviousStep: Boolean) {
 
 class MeetingEditBottomSheetViewModel (
     private val meetingRepository: MeetingRepository,
-    private val userContactRepository: UserContactRepository
+    private val userContactRepository: UserContactRepository,
+    private val connectivityObserver: NetworkConnectivityObserver
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(MeetingEditBottomSheetState())
+    private val connectFlow = connectivityObserver.observe()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+    private val _uiState = MutableStateFlow(MeetingEditBottomSheetState(
+        isConnected = connectFlow
+    ))
     val uiState = _uiState.asStateFlow()
 
     fun changeCheckedUserContact(contact: UserContact, checked: Boolean) {
@@ -181,6 +195,6 @@ class MeetingEditBottomSheetViewModel (
     }
 
     public fun clear() {
-        _uiState.value = MeetingEditBottomSheetState()
+        _uiState.value = MeetingEditBottomSheetState(isConnected = connectFlow)
     }
 }

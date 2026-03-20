@@ -2,6 +2,7 @@ package com.team2.meetspace
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -15,6 +16,10 @@ import com.team2.meetspace.data.repositories.MeetingRepository
 import com.team2.meetspace.data.repositories.UserContactRepository
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
 import com.team2.meetspace.ui.viewModel.MainScreenViewModel
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -57,6 +62,9 @@ class Dependencies(var context: Context) {
     val connectivityManager: ConnectivityManager by lazy {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
+    val networkConnectivityObserver: NetworkConnectivityObserver by lazy {
+        NetworkConnectivityObserver(context)
+    }
     val meetingLocalDataSource: MeetingLocalDataSource by lazy {
         MeetingLocalDataSource(meetspaceAppDb!!.getMeetingDao());
     }
@@ -78,7 +86,8 @@ class MeetingEditBottomSheetViewModelFactory(var dependencies: Dependencies) : V
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return MeetingEditBottomSheetViewModel(
             dependencies.meetingRepository,
-            dependencies.userContactRepository
+            dependencies.userContactRepository,
+            dependencies.networkConnectivityObserver
         ) as T
     }
 }
@@ -87,7 +96,28 @@ class MainScreenViewModelFactory(var dependencies: Dependencies) : ViewModelProv
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return MainScreenViewModel(
             dependencies.meetingRepository,
-            dependencies.connectivityManager
+            dependencies.networkConnectivityObserver
         ) as T
     }
+}
+
+class NetworkConnectivityObserver(context: Context) {
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    fun observe(): Flow<Boolean> = callbackFlow {
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                trySend(true)
+            }
+            override fun onLost(network: Network) {
+                trySend(false)
+            }
+        }
+
+        connectivityManager.registerDefaultNetworkCallback(callback)
+        awaitClose {
+            connectivityManager.unregisterNetworkCallback(callback)
+        }
+    }.distinctUntilChanged()
 }

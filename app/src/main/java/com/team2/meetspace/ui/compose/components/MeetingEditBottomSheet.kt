@@ -13,14 +13,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team2.meetspace.Dependencies
+import com.team2.meetspace.R
 import com.team2.meetspace.data.entities.Meeting
 import com.team2.meetspace.data.entities.UserContact
 import com.team2.meetspace.ui.viewModel.MeetingEditBottomSheetViewModel
@@ -29,7 +32,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MeetingCreateBottomSheet(
+fun MeetingEditBottomSheet(
     meeting: Meeting = Meeting.emptyMeeting,
     viewModel: MeetingEditBottomSheetViewModel = viewModel(),
     sheetState: SheetState,
@@ -40,6 +43,7 @@ fun MeetingCreateBottomSheet(
     val context = LocalContext.current
 
     val state by viewModel.uiState.collectAsState()
+    val isConnected by state.isConnected.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -73,122 +77,113 @@ fun MeetingCreateBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState
     ) {
-        if (
-            !Dependencies.NetworkHelper().checkConnection(LocalContext.current.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
-        ) {
-            state.currentStep =  MeetingEditStep.Error
-            ErrorBottomSheetNoInternet(
+        if (!isConnected) {
+            ErrorBottomSheet(
                 onExit = {
-                    scope.launch { sheetState.hide() }
-                    state.currentStep =  MeetingEditStep.Creation
-                }
+                    scope.launch { sheetState.hide(); viewModel.clear(); onDismiss() }
+                },
+                errorText = stringResource(R.string.no_internet_connection_label),
+                description = stringResource(R.string.no_internet_connection_desc)
+            )
+        }
+        else if (state.currentStep == MeetingEditStep.Error) {
+            ErrorBottomSheet(
+                onExit = {
+                    scope.launch { sheetState.hide(); viewModel.clear(); onDismiss() }
+                },
+                errorText = state.error ?: "Неизвестная ошибка",
+                description = ""
             )
         }
         else {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .navigationBarsPadding()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 16.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .navigationBarsPadding()
             ) {
-                if (state.currentStep.allowsPreviousStep) {
-                    IconButton(onClick = { viewModel.previousStep() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
-                    }
-                }
-                Text(
-                    text = when (state.currentStep) {
-                        MeetingEditStep.Creation -> "Создать\nвстречу"
-                        MeetingEditStep.TimestampSelection -> "Запланировать\nвстречу"
-                        MeetingEditStep.UserContactSelection -> "Контакты"
-                        else -> ""
-                    },
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(Modifier.weight(1f))
-                Text("шаг ${state.currentStep.index}", style = MaterialTheme.typography.bodyMedium)
-            }
-
-            HorizontalDivider()
-            Spacer(Modifier.height(16.dp))
-
-            when (state.currentStep) {
-                MeetingEditStep.Creation ->
-                    Step1TypeAndDescription(
-                        isImmediate = state.createNow,
-                        onImmediateChange = { viewModel.setCreationTime(it) },
-                        description = state.description,
-                        onDescriptionChange = { viewModel.changeDescription(it) },
-                        onNext = { viewModel.nextStep() }
-                    )
-
-                MeetingEditStep.TimestampSelection ->
-                    Step2DateTime(
-                        selectedDate = state.selectedDate,
-                        selectedTime = state.selectedTime,
-                        onDateChange = { viewModel.changeDate(it) },
-                        onTimeChange = { viewModel.changeTime(it) },
-                        onNext = { viewModel.nextStep() }
-                    )
-
-                MeetingEditStep.UserContactSelection ->
-                    Step3Contacts(
-                        contacts = state.contacts,
-                        selectedContacts = state.selectedContacts,
-                        onContactToggled = { contact, checked ->
-                            viewModel.changeCheckedUserContact(contact, checked)
-                        },
-                        onSave = {
-                            viewModel.createMeeting()
-                            scope.launch { sheetState.hide() }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                ) {
+                    if (state.currentStep.allowsPreviousStep) {
+                        IconButton(onClick = { viewModel.previousStep() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
                         }
+                    }
+                    Text(
+                        text = when (state.currentStep) {
+                            MeetingEditStep.Creation -> "Создать\nвстречу"
+                            MeetingEditStep.TimestampSelection -> "Запланировать\nвстречу"
+                            MeetingEditStep.UserContactSelection -> "Контакты"
+                            else -> ""
+                        },
+                        style = MaterialTheme.typography.titleLarge
                     )
-
-                MeetingEditStep.SendForm -> {
-                    viewModel.createMeeting()
-                }
-
-                MeetingEditStep.Finished -> {
-                    LaunchedEffect(state.meeting) {
-                        onMeetingCreated(state.meeting)
-                        viewModel.clear()
+                    Spacer(Modifier.weight(1f))
+                    if (state.currentStep.allowsPreviousStep) {
+                        Text(
+                            "шаг ${state.currentStep.index}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
 
-                else -> {}
-            }
-            Spacer(Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(16.dp))
 
-        }}
-    }
-}
+                when (state.currentStep) {
+                    MeetingEditStep.Creation ->
+                        Step1TypeAndDescription(
+                            isImmediate = state.createNow,
+                            onImmediateChange = { viewModel.setCreationTime(it) },
+                            description = state.description,
+                            onDescriptionChange = { viewModel.changeDescription(it) },
+                            onNext = { viewModel.nextStep() }
+                        )
 
-private fun loadContacts(context: Context): List<UserContact> {
-    val list = mutableListOf<UserContact>()
-    context.contentResolver.query(
-        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-        arrayOf(
-            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER
-        ),
-        null,
-        null,
-        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
-    )?.use { cursor ->
-        val nameIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
-        val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                    MeetingEditStep.TimestampSelection ->
+                        Step2DateTime(
+                            selectedDate = state.selectedDate,
+                            selectedTime = state.selectedTime,
+                            onDateChange = { viewModel.changeDate(it) },
+                            onTimeChange = { viewModel.changeTime(it) },
+                            onNext = { viewModel.nextStep() }
+                        )
 
-        while (cursor.moveToNext()) {
-            val name = if (nameIndex >= 0) cursor.getString(nameIndex) else null
-            val phone = if (numberIndex >= 0) cursor.getString(numberIndex) else null
-            if (!phone.isNullOrBlank()) {
-                list.add(UserContact(name, phone))
+                    MeetingEditStep.UserContactSelection ->
+                        Step3Contacts(
+                            contacts = state.contacts,
+                            selectedContacts = state.selectedContacts,
+                            onContactToggled = { contact, checked ->
+                                viewModel.changeCheckedUserContact(contact, checked)
+                            },
+                            onSave = { viewModel.nextStep() }
+                        )
+
+                    MeetingEditStep.SendForm -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                        viewModel.createMeeting()
+                    }
+
+                    MeetingEditStep.Finished -> {
+                        LaunchedEffect(state.meeting) {
+                            onMeetingCreated(state.meeting)
+                            viewModel.clear()
+                            scope.launch { sheetState.hide(); onDismiss(); }
+                        }
+                    }
+                    else -> {}
+                }
+                Spacer(Modifier.height(24.dp))
             }
         }
     }
-    return list.distinctBy { it.phone }
 }
