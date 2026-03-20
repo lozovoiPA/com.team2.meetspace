@@ -150,7 +150,6 @@ class MeetingEditBottomSheetViewModel (
             
             when(val result = meetingRepository.create(timestamp, _uiState.value.description, selectedContacts)) {
                 is MeetingCreated -> {
-                    // Планируем SMS-уведомления
                     val meetingDateTime = if (_uiState.value.createNow) {
                         LocalDateTime.now()
                     } else {

@@ -2,6 +2,7 @@ package com.team2.meetspace.ui.compose.components
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -58,7 +59,7 @@ fun MeetingEditBottomSheet(
                 title = "Разрешить приложению Meetspace иметь доступ к контактам?",
                 description = "Для выбора участников встречи необходим доступ к контактам",
                 allowButtonText = "Разрешить",
-                denyButtonText = "Запретить",
+                denyButtonText = "Пропустить",
                 onAllowClick = { permissionLauncher.launch(Manifest.permission.READ_CONTACTS) },
                 onDenyClick = { viewModel.skipContacts() }
             )
@@ -177,6 +178,7 @@ fun MeetingEditBottomSheet(
                             onMeetingCreated(state.meeting)
                             viewModel.clear()
                             scope.launch { sheetState.hide(); onDismiss(); }
+                            Toast.makeText(context, "Встреча успешно создана!", Toast.LENGTH_SHORT).show()
                         }
                     }
                     else -> {}

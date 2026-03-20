@@ -58,7 +58,7 @@ class MockSmsSender(private val context: Context) : SmsSender {
         showNotification(message)
     }
 
-    private fun showNotification(message: String) {
+    fun showNotification(message: String) {
         val channelId = "sms_debug_channel"
         val notificationId = 1001 
 
