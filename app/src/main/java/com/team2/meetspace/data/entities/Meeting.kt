@@ -2,16 +2,12 @@ package com.team2.meetspace.data.entities
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import java.text.SimpleDateFormat
+import com.team2.meetspace.data.PreferencesManager
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneId
 
 import java.time.format.DateTimeFormatter
-import java.util.Date
-import java.util.Locale
 
 @Entity(tableName = "meetings")
 data class MeetingDbEntity(
@@ -19,7 +15,9 @@ data class MeetingDbEntity(
     val timestamp: Long,
     @ColumnInfo(name = "room_identifier") val roomIdentifier: String,
     val description: String
-) { }
+) {
+    @Ignore val userContacts: List<UserContactDbTuple> = emptyList()
+}
 
 data class Meeting(
     val timestamp: Long,
@@ -29,6 +27,14 @@ data class Meeting(
 ) {
     companion object {
         public val emptyMeeting: Meeting = Meeting(0, "", "");
+        public fun fromDbEntity(meetingDb: MeetingDbEntity): Meeting {
+            val users = mutableListOf<UserContact>();
+            for (userContactDb in meetingDb.userContacts){
+                users.add(UserContact.fromDbEntity(userContactDb))
+            }
+            val meeting = Meeting(meetingDb.timestamp, meetingDb.roomIdentifier, meetingDb.description, users)
+            return meeting
+        }
     }
 
     public fun toDbEntity(): MeetingDbEntity = MeetingDbEntity(
@@ -44,14 +50,14 @@ data class Meeting(
 
     public fun getDate(): String {
         val instant = Instant.ofEpochMilli(timestamp);
-        val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate();
-        val formatter = DateTimeFormatter.ofPattern("MM:dd");
+        val localDate = instant.atZone(PreferencesManager.systemTimeZone).toLocalDate();
+        val formatter = DateTimeFormatter.ofPattern("dd.MM");
         return formatter.format(localDate);
     }
 
     public fun getTime(): String {
         val instant = Instant.ofEpochMilli(timestamp);
-        val localTime = instant.atZone(ZoneId.systemDefault()).toLocalTime();
+        val localTime = instant.atZone(PreferencesManager.systemTimeZone).toLocalTime();
         val formatter = DateTimeFormatter.ofPattern("HH:mm");
         return localTime.format(formatter);
     }

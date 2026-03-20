@@ -4,6 +4,7 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,16 +17,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,11 +41,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.team2.meetspace.data.PreferencesManager
+import com.team2.meetspace.ui.compose.components.MspFilledButton
+import com.team2.meetspace.ui.compose.components.MspOutlineButton
 import com.team2.meetspace.ui.compose.components.PermissionCard
+import com.team2.meetspace.ui.theme.LogoGradient
 
+enum class LandingScreenStep {
+    Welcome,
+    Permission
+}
+
+@Preview(showBackground = true)
 @Composable
 fun LandingScreen(
     onNextButtonClicked: () -> Unit = {}
@@ -57,19 +73,17 @@ fun LandingScreen(
         return
     }
 
-    var currentPage by rememberSaveable { mutableIntStateOf(0) }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { _ ->
-        preferencesManager.setOnboardingCompleted()
-        onNextButtonClicked()
-    }
+    var currentPage by rememberSaveable { mutableStateOf(LandingScreenStep.Welcome) }
 
     val onFinishOnboarding = {
+        currentPage = LandingScreenStep.Welcome
         preferencesManager.setOnboardingCompleted()
         onNextButtonClicked()
     }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { _ -> onFinishOnboarding() }
 
     Column(
         modifier = Modifier
@@ -77,73 +91,64 @@ fun LandingScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Upper Spacer
         Spacer(modifier = Modifier.weight(1f))
-
-        // Logo
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF1A1A1A), Color(0xFF6B1B3C), Color(0xFFE94E77))
-                    )
-                )
-                .border(4.dp, Color.Black, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "MEETSPACE",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
-        }
-
+        MeetspaceLogo()
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Meetspace",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
+        WelcomePageContent(
+            onNext = { currentPage = LandingScreenStep.Permission }
         )
+        Spacer(modifier = Modifier.weight(1f))
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        if (currentPage == 0) {
-            WelcomePageContent(
-                onNext = { currentPage = 1 }
-            )
-            // Push Welcome content slightly up from the very bottom
-            Spacer(modifier = Modifier.weight(1f))
-        } else {
-            // Description text stays at the top (below title)
-            Text(
-                text = "Разрешите приложению отправлять уведомления, чтобы вы могли знать, если скоро начнется встреча.",
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            // THIS Spacer pushes the PermissionCard to the bottom while keeping text above
-            Spacer(modifier = Modifier.weight(2f))
-
+        if(currentPage == LandingScreenStep.Permission) {
             PermissionCard(
-                icon = Icons.Outlined.Notifications,
-                title = "Разрешить приложению Meetspace отправлять уведомления?",
+                icon = Icons.Outlined.AccountCircle,
+                title = "Разрешить приложению Meetspace доступ к сообщениям и отправке уведомлений?",
+                description = "Разрешите приложению отправлять уведомления вам и приглашенным на встречу, чтобы вы не забыли о ее начале",
                 allowButtonText = "Разрешить",
-                denyButtonText = "Запретить",
-                onAllowClick = {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    } else {
-                        onFinishOnboarding()
-                    }
-                },
-                onDenyClick = onFinishOnboarding
+                denyButtonText = "Пропустить",
+                onAllowClick =
+                    {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.POST_NOTIFICATIONS,
+                                    Manifest.permission.SEND_SMS
+                                )
+                            )
+                        } else {
+                            permissionLauncher.launch(arrayOf(Manifest.permission.SEND_SMS))
+                        }
+                    },
+                onDenyClick = { onFinishOnboarding() }
             )
         }
+    }
+}
+
+@Composable
+private fun MeetspaceLogo(
+    size: Dp = 200.dp,
+    fontSize: TextUnit = 18.sp
+) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(
+                Brush.verticalGradient(
+                    colors = LogoGradient
+                )
+            )
+            .border(4.dp, Color.Black, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "MEETSPACE",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = fontSize
+        )
     }
 }
 
@@ -154,22 +159,21 @@ private fun WelcomePageContent(onNext: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
+            text = "Meetspace",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
             text = "Добро пожаловать!\nВ MEETSPACE вы можете создавать видео-встречи и управлять их планированием.",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
-
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Button(
-            onClick = onNext,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D1F2D))
-        ) {
-            Text("Далее", color = Color.White)
-        }
+        Spacer(modifier = Modifier.height(98.dp))
+        MspFilledButton(onClick = { onNext() }, text = "Далее")
     }
 }
+

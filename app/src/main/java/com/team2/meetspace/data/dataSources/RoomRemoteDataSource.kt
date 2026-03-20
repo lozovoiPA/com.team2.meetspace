@@ -14,7 +14,7 @@ public class RoomRemoteDataSource(var connectivityManager: ConnectivityManager) 
         if(Dependencies.NetworkHelper().checkConnection(connectivityManager)){
             return sendRoomCreateRequest(timestamp);
         }
-        return ErrorResult(0, "No internet connection");
+        return ErrorResult(0, "Нет интернет соединения");
     }
 
     private fun sendRoomCreateRequest(timestamp: Long): Result {

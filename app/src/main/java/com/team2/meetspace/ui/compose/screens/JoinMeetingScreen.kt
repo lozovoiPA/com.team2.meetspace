@@ -1,35 +1,53 @@
 package com.team2.meetspace.ui.compose.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.team2.meetspace.data.entities.Meeting
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.LocalDateTime
+
 data class JoinState(
     val roomCode: String = "",
     val userName: String = "",
@@ -45,11 +63,10 @@ class JoinViewModel : ViewModel() {
     private val _state = mutableStateOf(JoinState())
     val state: State<JoinState> = _state
 
-    private var meetingsList: List<Meeting> = listOf()
-
-    fun setMeetingsList(meetings: List<Meeting>) {
-        meetingsList = meetings
+    fun setInitialCode(code: String) {
+        _state.value = _state.value.copy(roomCode = code)
     }
+
     fun onRoomCodeChanged(newCode: String) {
         _state.value = _state.value.copy(
             roomCode = newCode,
@@ -60,19 +77,15 @@ class JoinViewModel : ViewModel() {
     fun onUserNameChanged(newName: String) {
         _state.value = _state.value.copy(userName = newName)
     }
+
     fun roomCheck(roomId: String) {
-        val foundMeeting = meetingsList.find { it.roomIdentifier == roomId }
-
-        val status = when {
-            foundMeeting == null -> ValidStatus.NotFound
-            else -> ValidStatus.Valid
-        }
-
+        val status = if (roomId.isNotEmpty()) ValidStatus.Valid else ValidStatus.NotFound
         _state.value = _state.value.copy(
             validStatus = status,
             isCodeValid = status == ValidStatus.Valid
         )
     }
+
     fun goToNextStep() {
         if (_state.value.currentStep == JoinRoom.Code) {
             if (_state.value.isCodeValid) {
@@ -80,6 +93,7 @@ class JoinViewModel : ViewModel() {
             }
         }
     }
+
     fun resetValidStatus() {
         _state.value = _state.value.copy(validStatus = ValidStatus.None)
     }
@@ -88,30 +102,40 @@ class JoinViewModel : ViewModel() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JoinMeetingScreen(
+    initialCode: String = "",
     viewModel: JoinViewModel = viewModel(),
     onCancelButtonClicked: () -> Unit = {},
     onNextButtonClicked: (String, String) -> Unit,
     onMeetingButtonClicked: () -> Unit
-){val state by viewModel.state
+) {
+    val state by viewModel.state
+
+    LaunchedEffect(initialCode) {
+        if (initialCode.isNotEmpty()) {
+            viewModel.setInitialCode(initialCode)
+            viewModel.roomCheck(initialCode)
+        }
+    }
+
     Scaffold(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
                     selected = false,
-                    onClick = { onMeetingButtonClicked(); },
+                    onClick = { onMeetingButtonClicked() },
                     icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                     label = { Text("Встречи") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { onCancelButtonClicked(); },
+                    onClick = { onCancelButtonClicked() },
                     icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Главная") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = {  },
-                    icon = {  },
+                    onClick = { },
+                    icon = { },
                     enabled = false
                 )
             }
@@ -155,156 +179,162 @@ fun JoinRoomScreen(
             onNext()
         }
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    )
-    {
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(
-            text = "Присоединиться к встрече",
-            modifier = Modifier.fillMaxWidth(),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Left
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         )
+        {
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Присоединиться к встрече",
+                modifier = Modifier.fillMaxWidth(),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Left
+            )
 
-        HorizontalDivider(
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         )
-        Spacer(modifier = Modifier.height(20.dp))
-    }
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    )
-    {
-        when (validStatus){
-            ValidStatus.None ->
-            {
-                Text(
-                    text = "Номер комнаты",
-                    fontSize = 20.sp,
-                    modifier = Modifier
-                        .padding(bottom = 5.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Left
-                )
-
-                OutlinedTextField(
-                    value = roomCode,
-                    onValueChange = onRoomCodeChange,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 32.dp)
-                )
-
-                Button(
-                    onClick = {
-                        onCheck(roomCode)
-                    },
-                    enabled = roomCode.isNotEmpty(),
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.5f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
+        {
+            when (validStatus){
+                ValidStatus.None ->
+                {
+                    Text(
+                        text = "Номер комнаты",
+                        fontSize = 20.sp,
+                        modifier = Modifier
+                            .padding(bottom = 5.dp)
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Left
                     )
-                ) {
-                    Text("Далее", fontSize = 16.sp)
+
+                    OutlinedTextField(
+                        value = roomCode,
+                        onValueChange = onRoomCodeChange,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 32.dp)
+                    )
+
+                    Button(
+                        onClick = {
+                            onCheck(roomCode)
+                        },
+                        enabled = roomCode.isNotEmpty(),
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = 0.5f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Далее", fontSize = 16.sp)
+                    }
                 }
+
+                ValidStatus.NotFound -> {
+                    Text(
+                        text = "Сообщение\n ",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(text = "Комната с введённым \n номером не найдена")
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        onClick = { onHomeButtonClicked() },
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = 0.5f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("На Главную")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = { onResetValid() },
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = 0.5f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Назад")
+                    }
+                }
+
+                ValidStatus.NotStarted -> {
+                    Text(
+                        text = "Сообщение\n ",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(text = "Встреча ещё не началась")
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        onClick = { onHomeButtonClicked() },
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = 0.5f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("На Главную")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(
+                        onClick = { onResetValid() },
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = 0.5f)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Назад")
+                    }
+                }
+
+                else -> { }
             }
-
-            ValidStatus.NotFound -> {
-                Text(
-                    text = "Сообщение\n ",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(text = "Комната с ведённым \n номером не найдена")
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = { onHomeButtonClicked(); },
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.5f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("На Главную")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedButton(
-                    onClick = { onResetValid() }, // Изменил на onResetValid
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.5f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Назад")
-                }
-            }
-            ValidStatus.NotStarted -> {
-                Text(
-                    text = "Сообщение\n ",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(text = "Встреча ещё не началась")
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = { onHomeButtonClicked(); },
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.5f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("На Главную")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedButton(
-                    onClick = { onResetValid() }, // Изменил на onResetValid
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = 0.5f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Назад")
-                }
-            }
-            else -> { onNext }
         }
     }
 }
@@ -316,6 +346,11 @@ fun UserNameScreen(
     onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val contactPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -360,8 +395,21 @@ fun UserNameScreen(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .padding(bottom = 16.dp)
         )
+
+        OutlinedButton(
+            onClick = {
+                val status = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
+                if (status != PackageManager.PERMISSION_GRANTED) {
+                    contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                }
+            },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text("Пригласить из контактов")
+        }
 
         Button(
             onClick = onNext,

@@ -1,60 +1,64 @@
 package com.team2.meetspace.ui.compose.screens
 
-import android.content.Context
-import android.net.ConnectivityManager
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.team2.meetspace.ui.viewModel.MainViewModel
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import com.team2.meetspace.ui.compose.components.MeetingCreateBottomSheet
+import com.team2.meetspace.R
+import com.team2.meetspace.ui.compose.components.ErrorBottomSheet
+import com.team2.meetspace.ui.compose.components.MeetingEditBottomSheet
+import com.team2.meetspace.ui.viewModel.MainScreenViewModel
 import kotlinx.coroutines.launch
-import com.team2.meetspace.data.entities.Meeting
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import com.team2.meetspace.Dependencies
-
+import com.team2.meetspace.ui.compose.components.MeetingCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MeetingScreen(
-    viewModel: MainViewModel  = viewModel(),
+fun MeetingsScreen(
+    viewModel: MainScreenViewModel = viewModel(),
+    onJoinMeeting: (String) -> Unit = {},
     onHomeButtonClicked: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
+    val isConnected by state.isConnected.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
+
+    LaunchedEffect(Unit) {
+        viewModel.retrieveMeetings()
+    }
 
     Scaffold(
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
                     selected = true,
-                    onClick = {  },
+                    onClick = { },
                     icon = { Icon(Icons.Default.DateRange, contentDescription = null) },
                     label = { Text("Встречи") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = { onHomeButtonClicked(); },
+                    onClick = { onHomeButtonClicked() },
                     icon = { Icon(Icons.Default.Home, contentDescription = null) },
                     label = { Text("Главная") }
                 )
                 NavigationBarItem(
                     selected = false,
-                    onClick = {  },
-                    icon = {  },
+                    onClick = { },
+                    icon = { },
                     enabled = false
                 )
             }
@@ -82,20 +86,7 @@ fun MeetingScreen(
             )
             Spacer(modifier = Modifier.height(40.dp))
 
-
-            if (
-                !Dependencies.NetworkHelper().checkConnection(LocalContext.current.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Нет подключения к интренету")
-                }
-            }
-            else if (state.isLoading) {
+            if (state.isLoading) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -119,17 +110,17 @@ fun MeetingScreen(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = "Ближайшие встречи",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
                     LazyColumn {
                         items(state.upcomingMeetings) { meeting ->
-                            MeetingCardInfo(
-                                meeting = meeting
+                            MeetingCard(
+                                meeting = meeting,
+                                onEnterClick = {
+                                    onJoinMeeting(meeting.roomIdentifier)
+                                },
+                                enabled = isConnected,
+                                onDisabledClick = {
+                                    viewModel.showError()
+                                }
                             )
                         }
                     }
@@ -138,7 +129,7 @@ fun MeetingScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
         if (state.showCreateBottomSheet) {
-            MeetingCreateBottomSheet(
+            MeetingEditBottomSheet(
                 sheetState = sheetState,
                 onDismiss = {
                     scope.launch { sheetState.hide() }
@@ -151,52 +142,19 @@ fun MeetingScreen(
                 }
             )
         }
-    }
-}
 
-@Composable
-private fun MeetingCardInfo(meeting: Meeting) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = meeting.formattedDateTime,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = meeting.description.ifBlank { "Проверка проделанной работы" },
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        if (state.displayConnectionError) {
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.hideError() },
+                sheetState = sheetState
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Код: ${meeting.roomIdentifier}",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = { /* TODO: копировать */ }) {
-                        Icon(
-                            Icons.Default.ContentCopy,
-                            contentDescription = "Копировать",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                ErrorBottomSheet(
+                    onExit = {
+                        scope.launch { sheetState.hide(); viewModel.hideError() }
+                    },
+                    errorText = stringResource(com.team2.meetspace.R.string.no_internet_connection_label),
+                    description = stringResource(R.string.no_internet_connection_desc)
+                )
             }
         }
     }
